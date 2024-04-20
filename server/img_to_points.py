@@ -213,8 +213,8 @@ def create_weighted_edgelist(vertices: list[tuple[int, int]], adjacencies: dict[
             edges_dict[tuple(sorted((i, j)))] = np.linalg.norm(np.array(vertices[i]) - np.array(vertices[j]))
     return [(i, j, w) for (i, j), w in edges_dict.items()]
 
-def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
-    vertices, adjacencies = make_graph(img)
+def points_from_img(img: cv.Mat, max_points: int = 50) -> list[tuple[int, int]]:
+    vertices, adjacencies = make_graph(img, points_limit=max_points)
     components = connected_components(vertices, adjacencies)
     combined_adjacency = combine_components(components, vertices, adjacencies)
     edge_list = create_weighted_edgelist(vertices, combined_adjacency)

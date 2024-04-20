@@ -165,14 +165,17 @@ function App() {
 		formData.set("latitude", lat);
 		formData.set("longitude", lon);
 		formData.set("image", blob);
+		formData.set("max_points", '20');
 
 
 		const res = await fetch("/api/maps/coordinatize", {
 			method: "POST",
 			body: formData,
 		});
+
+		const parsedRes = await res.json() as { points: Array<Array<number>>};
 		
-		console.log(res);
+		console.log(parsedRes);
 
 		setWaypoints(newWaypoints);
 	}, [excalidraw, center]);
