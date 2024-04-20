@@ -135,7 +135,7 @@ def reduce_sections(sections: list[list[tuple[int, int]]], points_limit: int) ->
     return linearized_sections
     
 
-def make_graph(img: cv.Mat, points_limit: int = 200) -> tuple[list[tuple[int, int]], dict[int, list[int]]]:
+def make_graph(img: cv.Mat, points_limit: int = 50) -> tuple[list[tuple[int, int]], dict[int, list[int]]]:
     """
     Returns a list of points from an rgb image
     """
@@ -166,7 +166,7 @@ def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
     pass
 
 if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
+    img = cv.imread(f"{CURRENT_FILEPATH}/stick_and_triangle.png")
     canvas = np.zeros_like(img)
 
     vertices, adjacencies = make_graph(img)
