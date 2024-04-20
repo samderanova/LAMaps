@@ -12,6 +12,8 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 
+import { exportToBlob } from "@excalidraw/excalidraw";
+
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -24,7 +26,7 @@ import {
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
 import { Marker, TileLayer } from "react-leaflet";
 import { Routes } from "./Map";
-import type { webpack } from "next/dist/compiled/webpack/webpack";
+import { ExcalidrawContainerContext } from "@excalidraw/excalidraw/types/components/App";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -144,7 +146,7 @@ function App() {
     // console.log("loaded: ", excalidraw);
   }, [excalidraw]);
 
-  const handleDraw = useCallback(() => {
+  const handleDraw = useCallback(async () => {
     if (excalidraw == null) return;
 
     const elements = excalidraw.getSceneElements();
@@ -186,8 +188,6 @@ function App() {
         //   { lat, long, fractionX, fractionY, width, height, deltaX, deltaY },
         //   element,
         // );
-
-        return;
       }
       if (element.type === "line") {
         const deltaX = element.x; // element.points[1][0] - element.points[0][0];
@@ -206,9 +206,23 @@ function App() {
           { lat, long, fractionX, fractionY, width, height, deltaX, deltaY },
           element,
         );
-
-        return;
       }
+    });
+
+    const blob = await exportToBlob({
+      elements,
+      files: excalidraw.getFiles(),
+      getDimensions: () => {
+        return { width: 350, height: 350 };
+      },
+    });
+
+    await fetch("/maps/...", {
+      method: "POST",
+      body: blob,
+      headers: {
+        "Content-Type": "image/png",
+      },
     });
 
     setWaypoints(newWaypoints);
