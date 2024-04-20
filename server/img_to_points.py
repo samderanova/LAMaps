@@ -4,6 +4,7 @@ import numpy as np
 from itertools import combinations, product, pairwise
 import os
 import sys
+from chinese_postman import chinese_postman_problem
 sys.setrecursionlimit(int(1e6))
 
 CURRENT_FILEPATH = os.path.dirname(os.path.abspath(__file__))
@@ -201,31 +202,37 @@ def combine_components(components: list[list[int]], vertices: list[tuple[int,int
     
     return new_adjacencies
 
+def create_weighted_edgelist(vertices: list[tuple[int, int]], adjacencies: dict[int, list[int]]) -> list[tuple[int, int, float]]:
+    '''
+    Create undirected edge list with weights (no duplicates from adjacency list)
+    '''
+    edges_dict = dict()
+    for i, neighbors in adjacencies.items():
+        for j in neighbors:
+            # sort to guarantee no duplicates
+            edges_dict[tuple(sorted((i, j)))] = np.linalg.norm(np.array(vertices[i]) - np.array(vertices[j]))
+    return [(i, j, w) for (i, j), w in edges_dict.items()]
+
 def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
-    pass
-
-if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/stick_and_triangle.png")
-    canvas = np.zeros_like(img)
-
     vertices, adjacencies = make_graph(img)
     components = connected_components(vertices, adjacencies)
     combined_adjacency = combine_components(components, vertices, adjacencies)
-    for i, neighbors in combined_adjacency.items():
-        for j in neighbors:
-            cv.line(canvas, vertices[i], vertices[j], (255, 255, 255), 1)
+    edge_list = create_weighted_edgelist(vertices, combined_adjacency)
+    vertex_order = chinese_postman_problem(edge_list) 
     
+    return [
+        vertices[i] for i in vertex_order
+    ]
 
-    sections_canvas = np.zeros_like(img)
-    sections = sectionize(img)
-    reduced_sections = reduce_sections(sections, 50)
-    for section in reduced_sections:
-        rand_color = np.random.randint(0, 255, 3).tolist()
-        cv.line(sections_canvas, section[0], section[-1], rand_color, 1)
-    
-    cv.imshow("img", img)
-    cv.imshow("sections", sections_canvas) 
-    cv.imshow("graph", canvas)
+if __name__ == "__main__":
+    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
+    canvas = np.zeros_like(img)
+
+    for v1, v2 in pairwise(points_from_img(img)):
+        cv.line(canvas, v1, v2, (0, 255, 0), 2)
+        cv.imshow("canvas", canvas)
+        cv.waitKey(10)
+
     # if q, exit
     while cv.waitKey(1) != ord('q'):
         pass
