@@ -225,7 +225,7 @@ def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
     ]
 
 if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
+    img = cv.imread(f"{CURRENT_FILEPATH}/debugging/car.png")
     canvas = np.zeros_like(img)
 
     for v1, v2 in pairwise(points_from_img(img)):
