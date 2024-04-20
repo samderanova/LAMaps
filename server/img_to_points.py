@@ -52,7 +52,30 @@ def sectionize(img: cv.Mat):
                 visited.add((x, y))
                 dfs(x, y, last_section_index)
 
-    return sections.values()    
+
+    # redo a bfs starting with leftmost point to make sure no lines cross within a section
+    reordered_sections = []
+    for section in sections.values():
+        new_section = []
+        # find point with only 1 neighbor
+        first_point = min(
+            section,
+            key=lambda p: sum(1 for nx, ny in neighbors(p[0], p[1]) if (nx, ny) in section)
+        )
+        exploration = [first_point]
+        section_visited = set()
+        while len(exploration) > 0:
+            x, y = exploration.pop(0)
+            if (x, y) in section_visited:
+                continue
+            new_section.append((x, y))
+            section_visited.add((x, y))
+            for nx, ny in neighbors(x, y):
+                if (nx, ny) in section and (nx, ny) not in section_visited:
+                    exploration.append((nx, ny))
+        reordered_sections.append(new_section)
+
+    return reordered_sections
 
 def linearize_section(section: list[tuple[int, int]], angle_threshold: float) -> list[tuple[int, int]]:
     reduced_section = [
