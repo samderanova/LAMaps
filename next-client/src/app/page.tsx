@@ -100,8 +100,8 @@ function App() {
     elements.forEach((element) => {
       if (element.type === "freedraw") {
         element.points.forEach((point) => {
-          const deltaX = element.x + point[0]
-          const deltaY = element.y + point[1]
+          const deltaX = element.x + point[0];
+          const deltaY = element.y + point[1];
           const fractionX = deltaX / width;
           const fractionY = deltaY / height;
 
@@ -156,51 +156,57 @@ function App() {
   return (
     <div className="h-screen w-screen">
       <ModeToggle />
+      <div className="grid grid-rows-2 md:grid-rows-none gap-2 md:grid-cols-2 h-full w-full">
+        <div className="relative">
+          <MapContainer
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              zIndex: 0,
+            }}
+            center={[33.6459, -117.842717]}
+            zoom={16}
+            scrollWheelZoom={true}
+          >
+            <TileLayer
+              attribution={ATTRIBUTION_MARKUP}
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-      <div className="relative w-full h-96">
-        <MapContainer
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "absolute",
-            zIndex: 0,
-          }}
-          center={[33.6459, -117.842717]}
-          zoom={16}
-          scrollWheelZoom={true}
-        >
-          <TileLayer
-            attribution={ATTRIBUTION_MARKUP}
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {/* Top Left
+            {/* Top Left
           <Marker position={[33.648, -117.846837]} />
          */}
 
-          {/* Top Right
+            {/* Top Right
           <Marker position={[33.648, -117.837999]} />
 
           {/* Bottom Left 
           <Marker position={[33.6432, -117.846837]} />
           */}
 
-          {/* Bottom Right 
+            {/* Bottom Right 
           <Marker position={[33.6432, -117.837999]} />
           */}
 
-          {waypoints.map((waypoint, index) => {
-            return <Marker key={index} position={waypoint} />;
-          })}
+            {waypoints.map((waypoint, index) => {
+              return <Marker key={index} position={waypoint} />;
+            })}
 
-          {/* */}
-          <Routes latLngTuples={waypoints} />
-        </MapContainer>
-      </div>
+            {/* */}
+            <Routes latLngTuples={waypoints} />
+          </MapContainer>
+        </div>
 
-      <div style={{ height: "500px" }}>
-        <Button onClick={handleDraw}>Draw on Map</Button>
-        <Excalidraw excalidrawAPI={setExcalidraw} />
+        <div className="w-full h-full">
+          <Excalidraw excalidrawAPI={setExcalidraw} />
+          <Button
+            onClick={handleDraw}
+            className="absolute bottom-0.5 right-0 z-50"
+          >
+            Draw on Map
+          </Button>
+        </div>
       </div>
     </div>
   );
