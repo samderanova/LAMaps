@@ -1,7 +1,7 @@
 import cv2 as cv
 from collections import defaultdict
 import numpy as np
-from itertools import combinations, product
+from itertools import combinations, product, pairwise
 import os
 import sys
 sys.setrecursionlimit(int(1e6))
@@ -68,7 +68,6 @@ def sectionize(img: cv.Mat):
                 visited.add((x, y))
                 dfs(x, y, last_section_index)
                 last_section_index+=1
-
 
     # redo a bfs starting with leftmost point to make sure no lines cross within a section
     reordered_sections = []
@@ -147,7 +146,7 @@ def make_graph(img: cv.Mat, points_limit: int = 50) -> tuple[list[tuple[int, int
     global_indices = dict()
     for section in reduced_sections:
         for i in range(len(section)):
-            global_indices[(section[i])] = len(vertices)
+            global_indices[section[i]] = len(vertices)
             vertices.append(section[i])
             if i > 0:
                 adjacencies[global_indices[section[i]]].append(global_indices[section[i-1]])
@@ -156,11 +155,51 @@ def make_graph(img: cv.Mat, points_limit: int = 50) -> tuple[list[tuple[int, int
     for s1, s2 in combinations(reduced_sections, 2):
         # check if endpoints are close, if so add edges
         for i,j in product([0,-1],[0,-1]):
-            if np.linalg.norm(np.array(s1[i]) - np.array(s2[j])) < 10:
+            if np.linalg.norm(np.array(s1[i]) - np.array(s2[j])) < 5:
                 adjacencies[global_indices[s1[i]]].append(global_indices[s2[j]])
                 adjacencies[global_indices[s2[j]]].append(global_indices[s1[i]])
-        
+
     return vertices, adjacencies
+
+def connected_components(vertices: list[tuple[int, int]], adjacencies: dict[int, list[int]]) -> list[list[int]]:
+    '''
+    Returns components as lists of vertex indices
+    '''
+    visited = set()
+    components = []
+    for i in range(len(vertices)):
+        if i in visited or len(adjacencies[i]) == 0:
+            continue
+        exploration = [i]
+        component = []
+        while len(exploration) > 0:
+            cur = exploration.pop()
+            if cur in visited: continue
+            visited.add(cur)
+            component.append(cur)
+            for neighbor in adjacencies[cur]:
+                exploration.append(neighbor)
+        components.append(component)
+    return components 
+
+def combine_components(components: list[list[int]], vertices: list[tuple[int,int]], adjacencies: dict[int, list[int]]) -> list[list[int]]:
+    '''
+    Return new adjacency list with components combined
+    '''
+
+    left_right_components = sorted(components, key=lambda c: np.mean([vertices[i][0] for i in c]))
+    # copy adjacencies
+    new_adjacencies = { i: adjacencies[i].copy() for i in range(len(vertices))}
+
+    for c1, c2 in pairwise(left_right_components):
+        # connect bottom-right of c1 to bottom-left of c2
+        c1_bot_right = max(c1, key=lambda i: vertices[i][1]+vertices[i][0])
+        c2_bot_left = min(c2, key=lambda i: vertices[i][0]-vertices[i][1])
+
+        new_adjacencies[c1_bot_right].append(c2_bot_left)
+        new_adjacencies[c2_bot_left].append(c1_bot_right)
+    
+    return new_adjacencies
 
 def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
     pass
@@ -170,17 +209,19 @@ if __name__ == "__main__":
     canvas = np.zeros_like(img)
 
     vertices, adjacencies = make_graph(img)
-    for i, j in adjacencies.items():
-        for k in j:
-            rand_color = np.random.randint(0, 255, 3).tolist()
-            cv.line(canvas, vertices[i], vertices[k], rand_color, 2)
+    components = connected_components(vertices, adjacencies)
+    combined_adjacency = combine_components(components, vertices, adjacencies)
+    for i, neighbors in combined_adjacency.items():
+        for j in neighbors:
+            cv.line(canvas, vertices[i], vertices[j], (255, 255, 255), 1)
+    
 
     sections_canvas = np.zeros_like(img)
     sections = sectionize(img)
-    for section in sections:
+    reduced_sections = reduce_sections(sections, 50)
+    for section in reduced_sections:
         rand_color = np.random.randint(0, 255, 3).tolist()
-        for x,y in section:
-            cv.line(sections_canvas, (x,y), (x,y), rand_color, 1)
+        cv.line(sections_canvas, section[0], section[-1], rand_color, 1)
     
     cv.imshow("img", img)
     cv.imshow("sections", sections_canvas) 
