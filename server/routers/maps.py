@@ -1,6 +1,10 @@
 import numpy as np
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Form, File, UploadFile
+from typing import Annotated
 from pydantic import BaseModel
+import cv2 as cv
+import numpy as np
+from img_to_points import points_from_img
 
 router = APIRouter()
 
@@ -38,3 +42,9 @@ async def get_coords_from_image() -> list[Coordinate]:
         {"latitude": 34.24, "longitude": -117.334},
     ]
     return [Coordinate.model_validate(p) for p in points]
+
+@router.post("/coordinatize")
+async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], image: UploadFile = File(optional=True),):
+    cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
+    points = points_from_img(cv_img)
+    print(points)

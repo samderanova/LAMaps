@@ -85,8 +85,8 @@ function App() {
 	const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
 	const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
 	const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
-	const [lat, setLat] = useState<string>("");
-	const [lon, setLon] = useState<string>("");
+	const [lat, setLat] = useState<string>("33.6459");
+	const [lon, setLon] = useState<string>("-117.842717");
 
 	useEffect(() => {
 		const options: PositionOptions = {
@@ -166,12 +166,11 @@ function App() {
 		formData.set("longitude", lon);
 		formData.set("image", blob);
 
-		await fetch("/maps/...", {
+    console.log(formData)
+
+		await fetch("/api/maps/coordinatize", {
 			method: "POST",
 			body: formData,
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
 		});
 
 		setWaypoints(newWaypoints);
