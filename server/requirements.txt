@@ -1,2 +1,5 @@
 numpy
 fastapi
+pygame
+googlemaps
+python-dotenv
