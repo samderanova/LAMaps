@@ -1,6 +1,7 @@
 import "./globals.css";
 
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "App",
@@ -15,7 +16,14 @@ export default function Layout(props: LayoutProps) {
   return (
     <html>
       <body>
-        <div style={{ display: "contents" }}>{props.children}</div>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div style={{ display: "contents" }}>{props.children}</div>
+        </ThemeProvider>
       </body>
     </html>
   );
