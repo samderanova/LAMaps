@@ -98,6 +98,36 @@ function App() {
     const newWaypoints: L.LatLngTuple[] = [];
 
     elements.forEach((element) => {
+      if (element.type === "freedraw") {
+        element.points.forEach((point) => {
+          const deltaX = element.x + point[0]
+          const deltaY = element.y + point[1]
+          const fractionX = deltaX / width;
+          const fractionY = deltaY / height;
+
+          const lat = 33.648 - fractionY * boxHeight;
+          const long = -117.846837 - fractionX * boxWidth;
+
+          newWaypoints.push([lat, long]);
+        });
+
+        // const deltaX = element.x; // element.points[1][0] - element.points[0][0];
+        // const deltaY = element.y; // element.points[1][1] - element.points[0][1];
+        // const fractionX = deltaX / width;
+        // const fractionY = deltaY / height;
+
+        // const lat = 33.648 - fractionY * boxHeight;
+        // const long = -117.846837 - fractionX * boxWidth;
+
+        // newWaypoints.push([lat, long]);
+
+        // console.log(
+        //   { lat, long, fractionX, fractionY, width, height, deltaX, deltaY },
+        //   element,
+        // );
+
+        return;
+      }
       if (element.type === "line") {
         const deltaX = element.x; // element.points[1][0] - element.points[0][0];
         const deltaY = element.y; // element.points[1][1] - element.points[0][1];
@@ -109,7 +139,10 @@ function App() {
 
         newWaypoints.push([lat, long]);
 
-        console.log({ lat, long, fractionX, fractionY, width, height, deltaX, deltaY }, element);
+        console.log(
+          { lat, long, fractionX, fractionY, width, height, deltaX, deltaY },
+          element,
+        );
 
         return;
       }
