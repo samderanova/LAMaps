@@ -2,12 +2,7 @@
 import "./Map.css";
 import "leaflet/dist/leaflet.css";
 
-import {
-  useCallback,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useCallback, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
@@ -26,7 +21,6 @@ import {
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
 import { Marker, TileLayer } from "react-leaflet";
 import { Routes } from "./Map";
-import { ExcalidrawContainerContext } from "@excalidraw/excalidraw/types/components/App";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -49,14 +43,8 @@ const MapContainer = dynamic(
   },
 );
 
-interface ModeToggleProps {
-  setCenter: Dispatch<SetStateAction<L.LatLngTuple | undefined>>;
-}
-
-export function ModeToggle({ setCenter }: ModeToggleProps) {
+export function ModeToggle() {
   const { setTheme } = useTheme();
-  const [lat, setLat] = useState<string>("");
-  const [lon, setLon] = useState<string>("");
 
   const handleThemeChange = (theme: string) => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -85,28 +73,6 @@ export function ModeToggle({ setCenter }: ModeToggleProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <input
-        type="text"
-        placeholder="Latitude"
-        className="input input-bordered"
-        value={lat}
-        onChange={(e) => setLat(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Longitude"
-        className="input input-bordered"
-        value={lon}
-        onChange={(e) => setLon(e.target.value)}
-      />
-      <Button
-        onClick={() =>
-          setCenter([Number.parseFloat(lat), Number.parseFloat(lon)])
-        }
-        className="btn btn-success"
-      >
-        Update Center
-      </Button>
     </div>
   );
 }
@@ -118,7 +84,9 @@ const boxHeight = 33.648 - 33.6432;
 function App() {
   const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
   const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
-  const [center, setCenter] = useState<L.LatLngTuple>();
+  const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
+  const [lat, setLat] = useState<string>("");
+  const [lon, setLon] = useState<string>("");
 
   useEffect(() => {
     const options: PositionOptions = {
@@ -165,47 +133,23 @@ function App() {
           const fractionX = deltaX / width;
           const fractionY = deltaY / height;
 
-          // const lat = 33.648 - fractionY * boxHeight;
-          // const long = -117.846837 - fractionX * boxWidth;
-
           const lat = center![0] - fractionY * boxHeight;
           const long = center![1] - fractionX * boxWidth;
 
           newWaypoints.push([lat, long]);
         });
-
-        // const deltaX = element.x; // element.points[1][0] - element.points[0][0];
-        // const deltaY = element.y; // element.points[1][1] - element.points[0][1];
-        // const fractionX = deltaX / width;
-        // const fractionY = deltaY / height;
-
-        // const lat = 33.648 - fractionY * boxHeight;
-        // const long = -117.846837 - fractionX * boxWidth;
-
-        // newWaypoints.push([lat, long]);
-
-        // console.log(
-        //   { lat, long, fractionX, fractionY, width, height, deltaX, deltaY },
-        //   element,
-        // );
       }
+
       if (element.type === "line") {
         const deltaX = element.x; // element.points[1][0] - element.points[0][0];
         const deltaY = element.y; // element.points[1][1] - element.points[0][1];
         const fractionX = deltaX / width;
         const fractionY = deltaY / height;
 
-        // const lat = 33.648 - fractionY * boxHeight;
-        // const long = -117.846837 - fractionX * boxWidth;
         const lat = center![0] - fractionY * boxHeight;
         const long = center![1] - fractionX * boxWidth;
 
         newWaypoints.push([lat, long]);
-
-        console.log(
-          { lat, long, fractionX, fractionY, width, height, deltaX, deltaY },
-          element,
-        );
       }
     });
 
@@ -232,7 +176,33 @@ function App() {
 
   return (
     <div className="h-screen w-screen">
-      <ModeToggle setCenter={setCenter} />
+      <ModeToggle />
+
+      <input
+        type="text"
+        placeholder="Latitude"
+        className="input input-bordered"
+        value={lat}
+        onChange={(e) => setLat(e.target.value)}
+      />
+
+      <input
+        type="text"
+        placeholder="Longitude"
+        className="input input-bordered"
+        value={lon}
+        onChange={(e) => setLon(e.target.value)}
+      />
+
+      <Button
+        onClick={() =>
+          setCenter([Number.parseFloat(lat), Number.parseFloat(lon)])
+        }
+        className="btn btn-success"
+      >
+        Update Center
+      </Button>
+
       <div className="grid grid-rows-2 md:grid-rows-none gap-2 md:grid-cols-2 h-full w-full">
         <div className="relative">
           <MapContainer
@@ -250,28 +220,13 @@ function App() {
               attribution={ATTRIBUTION_MARKUP}
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+
             <Marker position={center!} />
-
-            {/* Top Left
-          <Marker position={[33.648, -117.846837]} />
-         */}
-
-            {/* Top Right
-          <Marker position={[33.648, -117.837999]} />
-
-          {/* Bottom Left 
-          <Marker position={[33.6432, -117.846837]} />
-          */}
-
-            {/* Bottom Right 
-          <Marker position={[33.6432, -117.837999]} />
-          */}
 
             {waypoints.map((waypoint, index) => {
               return <Marker key={index} position={waypoint} />;
             })}
 
-            {/* */}
             <Routes latLngTuples={waypoints} />
           </MapContainer>
         </div>
