@@ -1,12 +1,13 @@
 "use client";
+import "./Map.css";
+import "leaflet/dist/leaflet.css";
 
 import { useCallback, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 
-import { useEffect, useMemo } from "react";
-import type Coordinate from "@/types/Coordinate";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +17,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
+import { Marker, TileLayer } from "react-leaflet";
+import { Routes } from "./Map";
+
+const ATTRIBUTION_MARKUP =
+  '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
 
 const Excalidraw = dynamic(
   async () => (await import("@excalidraw/excalidraw")).Excalidraw,
   {
+    ssr: false,
+  },
+);
+
+const MapContainer = dynamic(
+  async () => {
+    const mod = await import("react-leaflet");
+    return mod.MapContainer;
+  },
+  {
+    loading: () => <p>Loading</p>,
     ssr: false,
   },
 );
@@ -56,97 +73,102 @@ export function ModeToggle() {
   );
 }
 
+const boxWidth = -117.846837 - -117.837999;
+
+const boxHeight = 33.648 - 33.6432;
+
 function App() {
   const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
+  const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
 
   useEffect(() => {
     if (excalidraw == null) return;
-    console.log("loaded: ", excalidraw);
+    // console.log("loaded: ", excalidraw);
   }, [excalidraw]);
 
   const handleDraw = useCallback(() => {
-    console.log("state: ", excalidraw?.getAppState());
-    console.log("drawing elements: ", excalidraw?.getSceneElements());
+    if (excalidraw == null) return;
+
+    const elements = excalidraw.getSceneElements();
+    const state = excalidraw.getAppState();
+
+    const width = state.width;
+    const height = state.height;
+
+    const newWaypoints: L.LatLngTuple[] = [];
+
+    elements.forEach((element) => {
+      if (element.type === "line") {
+        const deltaX = element.x; // element.points[1][0] - element.points[0][0];
+        const deltaY = element.y; // element.points[1][1] - element.points[0][1];
+        const fractionX = deltaX / width;
+        const fractionY = deltaY / height;
+
+        const lat = 33.648 - fractionY * boxHeight;
+        const long = -117.846837 - fractionX * boxWidth;
+
+        newWaypoints.push([lat, long]);
+
+        console.log({ lat, long, fractionX, fractionY, width, height, deltaX, deltaY }, element);
+
+        return;
+      }
+    });
+
+    setWaypoints(newWaypoints);
   }, [excalidraw]);
 
-  const [latitude, setLatitude] = useState<string>("");
-  const [longitude, setLongitude] = useState<string>("");
-  const [imagePoints, setImagePoints] = useState<L.LatLngTuple[]>([]);
+  console.log({ waypoints });
 
-  const Map = useMemo(
-    () =>
-      dynamic(() => import("@/app/Map"), {
-        loading: () => <p>Loading</p>,
-        ssr: false,
-      }),
-    [],
-  );
-
-  async function pullImage() {
-    const res = await fetch("/maps/image");
-    const imagePointsList: Coordinate[] = await res.json();
-    setImagePoints(imagePointsList.map((c) => [c.latitude, c.longitude]));
-  }
-
-  async function sendLatLon(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const res = await fetch("/maps/latlon", {
-      method: "POST",
-      body: JSON.stringify({
-        latitude: Number.parseFloat(latitude),
-        longitude: Number.parseFloat(longitude),
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const json = await res.json();
-    console.log(json);
-  }
-
-  useEffect(() => {
-    pullImage();
-  }, []);
-
-  return imagePoints.length > 0 ? (
+  return (
     <div className="h-screen w-screen">
+      <ModeToggle />
+
+      <div className="relative w-full h-96">
+        <MapContainer
+          style={{
+            width: "100%",
+            height: "100%",
+            position: "absolute",
+            zIndex: 0,
+          }}
+          center={[33.6459, -117.842717]}
+          zoom={16}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution={ATTRIBUTION_MARKUP}
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* Top Left
+          <Marker position={[33.648, -117.846837]} />
+ */}
+          {/* Top Right
+          <Marker position={[33.648, -117.837999]} />
+
+          {/* Bottom Left 
+          <Marker position={[33.6432, -117.846837]} />
+*/}
+          {/* Bottom Right 
+          <Marker position={[33.6432, -117.837999]} />
+          */}
+
+          {waypoints.map((waypoint, index) => {
+            return <Marker key={index} position={waypoint} />;
+          })}
+
+          {/* */}
+          <Routes latLngTuples={waypoints} />
+        </MapContainer>
+      </div>
+
       <div style={{ height: "500px" }}>
+        <Button onClick={handleDraw}>Draw on Map</Button>
         <Excalidraw excalidrawAPI={setExcalidraw} />
       </div>
-      <Button onClick={handleDraw}>Draw on Map</Button>
-      <ModeToggle />
-      <Map points={imagePoints} />
-      <div className="card px-5 py-4 border-2 max-w-xs mx-4 my-3 z-10 absolute">
-        <h1 className="text-3xl">LAMaps</h1>
-        <p className="my-3">Please input latitude and longitude.</p>
-        <form onSubmit={sendLatLon}>
-          <input
-            type="text"
-            placeholder="Latitude"
-            className="input input-bordered input-success w-full max-w-xs mb-3"
-            pattern="-?[0-9]+(.[0-9]+)"
-            value={latitude}
-            onChange={(e) => setLatitude(e.target.value)}
-            required
-          />
-          <br />
-          <input
-            type="text"
-            placeholder="Longitude"
-            className="input input-bordered input-success w-full max-w-xs mb-3"
-            pattern="-?[0-9]+(.[0-9]+)"
-            value={longitude}
-            onChange={(e) => setLongitude(e.target.value)}
-            required
-          />
-          <br />
-          <button type="submit" className="btn btn-success">
-            Submit
-          </button>
-        </form>
-      </div>
     </div>
-  ) : null;
+  );
 }
 
 export default App;
