@@ -1,3 +1,10 @@
 # Python
 __pycache__
 .venv
+cache/
+
+# Graph representation
+LA.graphml
+
+# env
+.env

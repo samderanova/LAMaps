@@ -18,25 +18,59 @@ import { Marker, TileLayer } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
 
 const ATTRIBUTION_MARKUP =
-  '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
+	'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
 
 const Excalidraw = dynamic(
-  async () => (await import("@excalidraw/excalidraw")).Excalidraw,
-  {
-    ssr: false,
-  },
+	async () => (await import("@excalidraw/excalidraw")).Excalidraw,
+	{
+		ssr: false,
+	},
 );
 
 const MapContainer = dynamic(
-  async () => {
-    const mod = await import("react-leaflet");
-    return mod.MapContainer;
-  },
-  {
-    loading: () => <p>Loading</p>,
-    ssr: false,
-  },
+	async () => {
+		const mod = await import("react-leaflet");
+		return mod.MapContainer;
+	},
+	{
+		loading: () => <p>Loading</p>,
+		ssr: false,
+	},
 );
+
+export function ModeToggle() {
+	const { setTheme } = useTheme();
+
+	const handleThemeChange = (theme: string) => {
+		document.documentElement.setAttribute("data-theme", theme);
+		setTheme(theme);
+	};
+
+	return (
+		<div className="flex flex-col sm:flex-row">
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button variant="outline" size="icon">
+						<Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+						<Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+						<span className="sr-only">Toggle theme</span>
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end">
+					<DropdownMenuItem onClick={() => handleThemeChange("light")}>
+						Light
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => handleThemeChange("dark")}>
+						Dark
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => handleThemeChange("system")}>
+						System
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
+	);
+}
 
 const boxWidth = -117.846837 - -117.837999;
 
@@ -87,28 +121,28 @@ function App() {
 
     if (excalidraw == null) return;
 
-    const elements = excalidraw.getSceneElements();
-    const state = excalidraw.getAppState();
+		const elements = excalidraw.getSceneElements();
+		const state = excalidraw.getAppState();
 
-    const width = state.width;
-    const height = state.height;
+		const width = state.width;
+		const height = state.height;
 
-    const newWaypoints: L.LatLngTuple[] = [];
+		const newWaypoints: L.LatLngTuple[] = [];
 
-    elements.forEach((element) => {
-      if (element.type === "freedraw") {
-        element.points.forEach((point) => {
-          const deltaX = element.x + point[0];
-          const deltaY = element.y + point[1];
-          const fractionX = deltaX / width;
-          const fractionY = deltaY / height;
+		elements.forEach((element) => {
+			if (element.type === "freedraw") {
+				element.points.forEach((point) => {
+					const deltaX = element.x + point[0];
+					const deltaY = element.y + point[1];
+					const fractionX = deltaX / width;
+					const fractionY = deltaY / height;
 
           const lat = center[0] - fractionY * boxHeight;
           const long = center[1] - fractionX * boxWidth;
 
-          newWaypoints.push([lat, long]);
-        });
-      }
+					newWaypoints.push([lat, long]);
+				});
+			}
 
       if (element.type === "line") {
         const deltaX = element.x;
@@ -119,25 +153,23 @@ function App() {
         const lat = center[0] - fractionY * boxHeight;
         const long = center[1] - fractionX * boxWidth;
 
-        newWaypoints.push([lat, long]);
-      }
-    });
+				newWaypoints.push([lat, long]);
+			}
+		});
 
-    const blob = await exportToBlob({
-      elements,
-      files: excalidraw.getFiles(),
-      getDimensions: () => {
-        return { width: 350, height: 350 };
-      },
-    });
+		const blob = await exportToBlob({
+			elements,
+			files: excalidraw.getFiles(),
+			getDimensions: () => {
+				return { width: 350, height: 350 };
+			},
+		});
 
-    await fetch("/maps/...", {
-      method: "POST",
-      body: blob,
-      headers: {
-        "Content-Type": "image/png",
-      },
-    });
+		const formData = new FormData();
+		formData.set("latitude", lat);
+		formData.set("longitude", lon);
+		formData.set("image", blob);
+		formData.set("max_points", '20');
 
     setWaypoints(newWaypoints);
 
