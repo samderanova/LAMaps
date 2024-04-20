@@ -24,15 +24,11 @@ def sectionize(img: cv.Mat):
     last_section_index = 0
     visited = set()
     def neighbors(x,y):
-        all_neighbors = [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y-1), (x-1,y+1), (x+1,y-1), (x+1,y+1)]
-        valid_neighbors = [
-            (nx, ny) for nx, ny in all_neighbors if 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1] and skeleton[nx, ny] > 0
-        ]
-        return valid_neighbors
+        return [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y-1), (x-1,y+1), (x+1,y-1), (x+1,y+1)]
 
     def is_intersection(x,y):
         neighbor_diffs = [
-            (nx-x, ny-y) for nx, ny in neighbors(x, y)
+            (nx-x, ny-y) for nx, ny in neighbors(x, y) if 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1] and skeleton[nx, ny] > 0
         ]
 
         # for every subset of 3
@@ -50,7 +46,9 @@ def sectionize(img: cv.Mat):
         nonlocal last_section_index
 
         for nx, ny in neighbors(x, y):
-            if (nx, ny) in visited:
+            in_bounds = 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1]
+            not_visited = (nx, ny) not in visited
+            if not (in_bounds and not_visited and skeleton[nx, ny] > 0):
                 continue
 
             visited.add((nx, ny))
@@ -65,7 +63,6 @@ def sectionize(img: cv.Mat):
             if skeleton[x, y] > 0 and (x, y) not in visited:
                 visited.add((x, y))
                 dfs(x, y, last_section_index)
-                last_section_index += 1
 
 
     # redo a bfs starting with leftmost point to make sure no lines cross within a section
@@ -73,20 +70,21 @@ def sectionize(img: cv.Mat):
     for section in sections.values():
         new_section = []
         # find point with only 1 neighbor
-        centroid = np.mean(section, axis=0)
-        endpoint = min(section, key=lambda p: len(neighbors(*p)))
-        endpoint_angle = np.arctan2(endpoint[1] - centroid[1], endpoint[0] - centroid[0]) + np.pi
-
-        def key_fn(p):
-            centroid_angle = np.arctan2(p[1] - centroid[1], p[0] - centroid[0]) + np.pi
-            # get angle from endpoint to p
-            if centroid_angle < endpoint_angle:
-                return endpoint_angle - centroid_angle
-            else:
-                return 2*np.pi - (centroid_angle - endpoint_angle)
-
-        # sort by angle, starting from endpoint
-        new_section = sorted(section, key=key_fn)
+        first_point = min(
+            section,
+            key=lambda p: sum(1 for nx, ny in neighbors(p[0], p[1]) if (nx, ny) in section)
+        )
+        exploration = [first_point]
+        section_visited = set()
+        while len(exploration) > 0:
+            x, y = exploration.pop(0)
+            if (x, y) in section_visited:
+                continue
+            new_section.append((x, y))
+            section_visited.add((x, y))
+            for nx, ny in neighbors(x, y):
+                if (nx, ny) in section and (nx, ny) not in section_visited:
+                    exploration.append((nx, ny))
         reordered_sections.append(new_section)
 
     return reordered_sections
@@ -159,7 +157,7 @@ def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
     pass
 
 if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/stick_and_triangle.png")
+    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
     canvas = np.zeros_like(img)
 
     vertices, adjacencies = make_graph(img)
