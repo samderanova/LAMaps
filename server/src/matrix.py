@@ -70,3 +70,16 @@ def fit_to_map(matrix):
         matrix = matrix + vector * 0.1
 
     return matrix, total_loss_per_iter
+
+
+def get_distance_miles(lat, lon):
+    G = get_map()
+    node_id = ox.distance.nearest_nodes(
+        G,
+        lat,
+        lon,
+    )
+    nodes = G.nodes()
+    node = nodes[node_id]
+    closest_lat, closest_lon = node["y"], node["x"]
+    return (lat - closest_lat) * 69, (lon - closest_lon) * 54.6
