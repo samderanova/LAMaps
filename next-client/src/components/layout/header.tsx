@@ -1,16 +1,17 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Ham, User } from "lucide-react";
+import { Ham, LogOut, User } from "lucide-react";
 import { ThemeToggle } from "../theme/toggle";
 import { getSession } from "@auth0/nextjs-auth0";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { parseSession } from "@/lib/auth";
 
 const headerNavLinks = [
   {
@@ -29,6 +30,8 @@ const headerNavLinks = [
 
 export async function Header() {
   const session = await getSession();
+
+  const user = parseSession(session);
 
   return (
     <div className="navbar bg-base-100">
@@ -70,20 +73,36 @@ export async function Header() {
 
       <div className="navbar-end">
         <ThemeToggle />
-        {session?.user ? (
+        {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="btn btn-ghost btn-circle">
-                <User />
+                <Avatar>
+                  <AvatarImage src={user.picture} alt={user.name} />
+                  <AvatarFallback>
+                    <User />
+                  </AvatarFallback>
+                </Avatar>
               </button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent>
-              Hello, {JSON.stringify(session.user, null, 2)}
+              <DropdownMenuLabel className="truncate max-w-40">
+                {user.name}
+              </DropdownMenuLabel>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem asChild>
+                <a href="/api/auth/logout" className="space-x-2">
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </a>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <a href="/auth/login" className="btn btn-primary btn-sm">
+          <a href="/api/auth/login" className="btn btn-primary btn-sm">
             Login
           </a>
         )}
