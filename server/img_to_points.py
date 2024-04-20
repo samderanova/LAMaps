@@ -24,7 +24,10 @@ def sectionize(img: cv.Mat):
     last_section_index = 0
     visited = set()
     def neighbors(x,y):
-        return [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y-1), (x-1,y+1), (x+1,y-1), (x+1,y+1)]
+        all_neighbors = [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y-1), (x-1,y+1), (x+1,y-1), (x+1,y+1)]
+        return [
+            (nx, ny) for nx, ny in all_neighbors
+        ]
 
     def is_intersection(x,y):
         neighbor_diffs = [
@@ -70,11 +73,12 @@ def sectionize(img: cv.Mat):
     # redo a bfs starting with leftmost point to make sure no lines cross within a section
     reordered_sections = []
     for section in sections.values():
+        section_set = set(section)
         new_section = []
         # find point with only 1 neighbor
         first_point = min(
             section,
-            key=lambda p: len(neighbors(*p))
+            key=lambda p: len([p2 for p2 in neighbors(*p) if p2 in section_set])
         )
         exploration = [first_point]
         section_visited = set()
@@ -88,7 +92,7 @@ def sectionize(img: cv.Mat):
             new_section.append((x, y))
             section_visited.add((x, y))
             for nx, ny in neighbors(x, y):
-                if (nx, ny) in section and (nx, ny) not in section_visited:
+                if (nx, ny) in section_set and (nx, ny) not in section_visited:
                     exploration.append((nx, ny))
         reordered_sections.append(new_section)
 
@@ -162,7 +166,7 @@ def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
     pass
 
 if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/stick_and_triangle.png")
+    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
     canvas = np.zeros_like(img)
 
     vertices, adjacencies = make_graph(img)
