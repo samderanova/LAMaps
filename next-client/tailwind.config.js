@@ -1,6 +1,7 @@
 // @ts-check
 
 import typography from '@tailwindcss/typography'
+import tailwindcssAnimate from 'tailwindcss-animate'
 import daisyui from "daisyui";
 import themes from "daisyui/src/theming/themes";
 import { fontFamily } from "tailwindcss/defaultTheme";
@@ -38,7 +39,7 @@ const config = {
     ],
   },
 
-  plugins: [daisyui, typography],
+  plugins: [daisyui, typography, tailwindcssAnimate],
 };
 
 export default config;
