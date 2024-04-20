@@ -176,13 +176,15 @@ function App() {
 
           {/* Top Left
           <Marker position={[33.648, -117.846837]} />
- */}
+         */}
+
           {/* Top Right
           <Marker position={[33.648, -117.837999]} />
 
           {/* Bottom Left 
           <Marker position={[33.6432, -117.846837]} />
-*/}
+          */}
+
           {/* Bottom Right 
           <Marker position={[33.6432, -117.837999]} />
           */}
