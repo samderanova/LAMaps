@@ -41,6 +41,7 @@ def sectionize(img: cv.Mat):
             ]):
                 return True
         return False
+
     def dfs(x,y,section_index):
         sections[section_index].append((y,x))
         nonlocal last_section_index
@@ -77,8 +78,11 @@ def sectionize(img: cv.Mat):
         )
         exploration = [first_point]
         section_visited = set()
+        x, y = first_point
         while len(exploration) > 0:
-            x, y = exploration.pop(0)
+            # get point in exploration with least distance to last point
+            i = np.argmin([np.linalg.norm(np.array(p) - np.array((x, y))) for p in exploration])
+            x, y = exploration.pop(i)
             if (x, y) in section_visited:
                 continue
             new_section.append((x, y))
