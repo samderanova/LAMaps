@@ -1,4 +1,5 @@
 import pygame
+from main import generate_points
 
 # Define window size
 window_width = 400
@@ -16,8 +17,8 @@ pygame.display.set_caption("Scaled Lines from Points")
 line_color = (0, 0, 255)  # Blue for lines
 
 # Define points list (replace with your desired points)
-from main import generate_points
-points  = generate_points("LA HACKS")
+points = generate_points("LA HACKS")
+
 
 def scale_points(points, window_width):
     """Scales points to fit the entire window width."""
