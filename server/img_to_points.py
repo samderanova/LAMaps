@@ -1,7 +1,7 @@
 import cv2 as cv
 from collections import defaultdict
 import numpy as np
-from itertools import pairwise
+from itertools import combinations, product
 import os
 import sys
 sys.setrecursionlimit(int(1e6))
@@ -77,73 +77,93 @@ def sectionize(img: cv.Mat):
 
     return reordered_sections
 
-def linearize_section(section: list[tuple[int, int]], angle_threshold: float) -> list[tuple[int, int]]:
-    reduced_section = [
-        section[0], section[1]
-    ]
-    for i in range(len(section))[2:-2]:
-        prev = section[i-2]
-        curr = section[i]
-        next = section[i+2]
-        angle = np.arctan2(curr[1] - prev[1], curr[0] - prev[0]) - np.arctan2(next[1] - curr[1], next[0] - curr[0])
-        if angle < angle_threshold:
-            reduced_section.append(curr)
-    reduced_section.extend(section[-2:])
+def linearize_section(section: list[tuple[int, int]], mse_threshold: float) -> list[tuple[int, int]]:
+    reduced_section = [section[0]]
+    last_added = 0
+    for i in range(1, len(section)-1):
+        # compute MSE for points last_added:i from linear approximation
+        prev_x, prev_y = section[last_added]
+        x, y = section[i]
+        if prev_x == x:
+            continue
+        a = (y - prev_y) / (x - prev_x)
+        b = prev_y - a * prev_x
+        err = np.mean([(a*x + b - y)**2 for x, y in section[last_added:i]])
+        if err >= mse_threshold:
+            reduced_section.append(section[i])
+            last_added = i
+    reduced_section.append(section[-1])
+
     return reduced_section
 
 def reduce_sections(sections: list[list[tuple[int, int]]], points_limit: int) -> list[tuple[int, int]]:
     # binary search to find angle threshold that hits point limit exactly
     # increasing the threshold will increase the number of points
     lo = 0
-    hi = 90
-    for i in range(10):
-        angle_threshold = (lo + hi) / 2
-        sections = [linearize_section(section, angle_threshold) for section in sections]
-        n_points = sum(len(section) for section in sections)
+    hi = 10
+    for i in range(100):
+        mse_threshold = (lo + hi) / 2
+        linearized_sections = [linearize_section(section, mse_threshold) for section in sections]
+        n_points = sum(len(section) for section in linearized_sections)
         if n_points  < points_limit:
-            # too few points, increase threshold
-            lo = angle_threshold
+            hi = mse_threshold
         elif n_points > points_limit:
-            hi = angle_threshold
+            lo = mse_threshold
         else:
             break
-    return sections
+    return linearized_sections
     
 
-def points_from_img(img: cv.Mat, points_limit: int = 200) -> list[tuple[int, int]]:
+def make_graph(img: cv.Mat, points_limit: int = 200) -> tuple[list[tuple[int, int]], dict[int, list[int]]]:
     """
     Returns a list of points from an rgb image
     """
-    pass
-    
+    sections = sectionize(img)
+    reduced_sections = reduce_sections(sections, points_limit)
 
+    vertices = []
+    adjacencies = defaultdict(list)
+    global_indices = dict()
+    for section in reduced_sections:
+        for i in range(len(section)):
+            global_indices[(section[i])] = len(vertices)
+            vertices.append(section[i])
+            if i > 0:
+                adjacencies[global_indices[section[i]]].append(global_indices[section[i-1]])
+                adjacencies[global_indices[section[i-1]]].append(global_indices[section[i]])
     
-    
+    for s1, s2 in combinations(reduced_sections, 2):
+        # check if endpoints are close, if so add edges
+        for i,j in product([0,-1],[0,-1]):
+            if np.linalg.norm(np.array(s1[i]) - np.array(s2[j])) < 10:
+                adjacencies[global_indices[s1[i]]].append(global_indices[s2[j]])
+                adjacencies[global_indices[s2[j]]].append(global_indices[s1[i]])
         
+    return vertices, adjacencies
 
-            
-
+def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
+    pass
 
 if __name__ == "__main__":
     img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
+    canvas = np.zeros_like(img)
 
-    skeleton = skeletonize(img) 
+    vertices, adjacencies = make_graph(img)
+    for i, j in adjacencies.items():
+        for k in j:
+            rand_color = np.random.randint(0, 255, 3).tolist()
+            cv.line(canvas, vertices[i], vertices[k], rand_color, 2)
 
-    # skeletonize and imshow
+    sections_canvas = np.zeros_like(img)
     sections = sectionize(img)
-    reduced_sections = reduce_sections(sections, 200)
-    palette = np.random.randint(0, 255, (len(sections), 3)).tolist()
-    canvas = np.zeros_like(img, dtype=np.uint8)
-    canvas2 = np.zeros_like(img, dtype=np.uint8)
-    for i, section in enumerate(sections):
-        for (y1,x1), (y2,x2) in pairwise(reduced_sections[i]):
-            cv.line(canvas, (y1, x1), (y2, x2), palette[i], 2)
-        for y,x in section:
-            canvas2[x, y] = palette[i]
-
-    cv.imshow("original", img)
-    cv.imshow("lines", canvas)
-    cv.imshow("skeleton", canvas2)
+    for section in sections:
+        rand_color = np.random.randint(0, 255, 3).tolist()
+        for x,y in section:
+            cv.line(sections_canvas, (x,y), (x,y), rand_color, 1)
+    
+    cv.imshow("img", img)
+    cv.imshow("sections", sections_canvas) 
+    cv.imshow("graph", canvas)
     # if q, exit
     while cv.waitKey(1) != ord('q'):
         pass
