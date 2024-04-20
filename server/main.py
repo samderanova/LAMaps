@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from hard_coded_text_pts import text_pts
+import cv2 as cv
+import numpy as np
+from img_to_points import points_from_img
 from routers import maps
 
 app = FastAPI()
@@ -31,6 +34,17 @@ def generate_points(text: str):
         shifted_pts = [(x + i, y) for x, y in text_pts[char]]
         pts.extend(shifted_pts)
     return pts
+
+@app.post("/img_to_points")
+async def img_to_points(file: UploadFile = File(...)) -> list[tuple[float, float]]:
+    """
+    Converts an image to a list of points that can be used to draw the image
+    """
+    # read image
+    contents = await file.read()
+    img = cv.imdecode(np.frombuffer(contents, np.uint8), cv.IMREAD_COLOR)
+    points = img_to_points(img)
+    return points
 
 
 @app.get("/")
