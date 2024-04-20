@@ -2,7 +2,12 @@
 import "./Map.css";
 import "leaflet/dist/leaflet.css";
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
@@ -19,6 +24,7 @@ import {
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
 import { Marker, TileLayer } from "react-leaflet";
 import { Routes } from "./Map";
+import type { webpack } from "next/dist/compiled/webpack/webpack";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -41,8 +47,14 @@ const MapContainer = dynamic(
   },
 );
 
-export function ModeToggle() {
+interface ModeToggleProps {
+  setCenter: Dispatch<SetStateAction<L.LatLngTuple | undefined>>;
+}
+
+export function ModeToggle({ setCenter }: ModeToggleProps) {
   const { setTheme } = useTheme();
+  const [lat, setLat] = useState<string>("");
+  const [lon, setLon] = useState<string>("");
 
   const handleThemeChange = (theme: string) => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -50,26 +62,50 @@ export function ModeToggle() {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleThemeChange("light")}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleThemeChange("system")}>
-          System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex flex-col sm:flex-row">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon">
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => handleThemeChange("light")}>
+            Light
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
+            Dark
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleThemeChange("system")}>
+            System
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <input
+        type="text"
+        placeholder="Latitude"
+        className="input input-bordered"
+        value={lat}
+        onChange={(e) => setLat(e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Longitude"
+        className="input input-bordered"
+        value={lon}
+        onChange={(e) => setLon(e.target.value)}
+      />
+      <Button
+        onClick={() =>
+          setCenter([Number.parseFloat(lat), Number.parseFloat(lon)])
+        }
+        className="btn btn-success"
+      >
+        Update Center
+      </Button>
+    </div>
   );
 }
 
@@ -80,7 +116,29 @@ const boxHeight = 33.648 - 33.6432;
 function App() {
   const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
   const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
+  const [center, setCenter] = useState<L.LatLngTuple>();
 
+  useEffect(() => {
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    };
+    navigator.geolocation.getCurrentPosition(
+      getPosSuccess,
+      getPosError,
+      options,
+    );
+  }, []);
+
+  function getPosSuccess(pos: GeolocationPosition) {
+    const { latitude, longitude } = pos.coords;
+    setCenter([latitude, longitude]);
+  }
+
+  function getPosError(err: GeolocationPositionError) {
+    console.warn(`ERROR(${err.code}): ${err.message}`);
+  }
   useEffect(() => {
     if (excalidraw == null) return;
     // console.log("loaded: ", excalidraw);
@@ -105,8 +163,11 @@ function App() {
           const fractionX = deltaX / width;
           const fractionY = deltaY / height;
 
-          const lat = 33.648 - fractionY * boxHeight;
-          const long = -117.846837 - fractionX * boxWidth;
+          // const lat = 33.648 - fractionY * boxHeight;
+          // const long = -117.846837 - fractionX * boxWidth;
+
+          const lat = center![0] - fractionY * boxHeight;
+          const long = center![1] - fractionX * boxWidth;
 
           newWaypoints.push([lat, long]);
         });
@@ -134,8 +195,10 @@ function App() {
         const fractionX = deltaX / width;
         const fractionY = deltaY / height;
 
-        const lat = 33.648 - fractionY * boxHeight;
-        const long = -117.846837 - fractionX * boxWidth;
+        // const lat = 33.648 - fractionY * boxHeight;
+        // const long = -117.846837 - fractionX * boxWidth;
+        const lat = center![0] - fractionY * boxHeight;
+        const long = center![1] - fractionX * boxWidth;
 
         newWaypoints.push([lat, long]);
 
@@ -149,13 +212,13 @@ function App() {
     });
 
     setWaypoints(newWaypoints);
-  }, [excalidraw]);
+  }, [excalidraw, center]);
 
-  console.log({ waypoints });
+  console.log(center, { waypoints });
 
   return (
     <div className="h-screen w-screen">
-      <ModeToggle />
+      <ModeToggle setCenter={setCenter} />
       <div className="grid grid-rows-2 md:grid-rows-none gap-2 md:grid-cols-2 h-full w-full">
         <div className="relative">
           <MapContainer
@@ -165,7 +228,7 @@ function App() {
               position: "absolute",
               zIndex: 0,
             }}
-            center={[33.6459, -117.842717]}
+            center={center ? center : [33.6459, -117.842717]}
             zoom={16}
             scrollWheelZoom={true}
           >
@@ -173,6 +236,7 @@ function App() {
               attribution={ATTRIBUTION_MARKUP}
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+            <Marker position={center!} />
 
             {/* Top Left
           <Marker position={[33.648, -117.846837]} />
