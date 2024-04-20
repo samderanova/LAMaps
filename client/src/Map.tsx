@@ -78,7 +78,7 @@ const latlngTuples: Array<L.LatLngTuple> = [
 	[51.508, -0.07],
 ];
 
-export function Map() {
+export default function Map() {
 	return (
 		<MapContainer
 			style={{
