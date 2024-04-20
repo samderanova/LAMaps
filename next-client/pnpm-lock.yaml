@@ -14,6 +14,9 @@ importers:
       clsx:
         specifier: ^2.1.0
         version: 2.1.0
+      lucide-react:
+        specifier: ^0.372.0
+        version: 0.372.0(react@18.2.0)
       next:
         specifier: ^14.2.2
         version: 14.2.2(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -24,7 +27,7 @@ importers:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
       tailwind-merge:
-        specifier: ^2.2.2
+        specifier: ^2.3.0
         version: 2.3.0
       tailwindcss-animate:
         specifier: ^1.0.7
@@ -439,6 +442,11 @@ packages:
   lru-cache@10.2.0:
     resolution: {integrity: sha512-2bIM8x+VAf6JT4bKAljS1qUWgMsqZRPGJS6FSahIMPVvctcNhyVp7AJu7quxOW9jwkryBReKZY5tY5JYv2n/7Q==}
     engines: {node: 14 || >=16.14}
+
+  lucide-react@0.372.0:
+    resolution: {integrity: sha512-0cKdqmilHXWUwWAWnf6CrrjHD8YaqPMtLrmEHXolZusNTr9epULCsiJwIOHk2q1yFxdEwd96D4zShlAj67UJdA==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0
 
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
@@ -1080,6 +1088,10 @@ snapshots:
       js-tokens: 4.0.0
 
   lru-cache@10.2.0: {}
+
+  lucide-react@0.372.0(react@18.2.0):
+    dependencies:
+      react: 18.2.0
 
   merge2@1.4.1: {}
 
