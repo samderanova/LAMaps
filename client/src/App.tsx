@@ -8,12 +8,6 @@ function App() {
 	const [longitude, setLongitude] = useState<string>("");
 	const [imagePoints, setImagePoints] = useState<L.LatLngTuple[]>([]);
 
-	async function pullImage() {
-		const res = await fetch("/maps/image");
-		const imagePointsList: Coordinate[] = await res.json();
-		setImagePoints(imagePointsList.map((c) => [c.latitude, c.longitude]));
-	}
-
 	async function sendLatLon(e: FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		const res = await fetch("/maps/latlon", {
@@ -30,9 +24,6 @@ function App() {
 		console.log(json);
 	}
 
-	useEffect(() => {
-		pullImage();
-	}, []);
 
 	return imagePoints.length > 0 ? (
 		<div className="h-screen w-screen">
