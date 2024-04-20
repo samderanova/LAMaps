@@ -2,14 +2,15 @@
 import "./Map.css";
 import "leaflet/dist/leaflet.css";
 
-import { useCallback, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Marker, TileLayer } from "react-leaflet";
+import { useMediaQuery } from "usehooks-ts";
 
-import { exportToBlob } from "@excalidraw/excalidraw";
-
-import { useEffect } from "react";
+import { exportToBlob, Footer } from "@excalidraw/excalidraw";
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
-import { Marker, TileLayer } from "react-leaflet";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+
 import { Routes } from "./Map";
 
 const ATTRIBUTION_MARKUP =
@@ -82,11 +87,19 @@ const boxWidth = -117.846837 - -117.837999;
 const boxHeight = 33.648 - 33.6432;
 
 function App() {
+  const map = useRef<L.Map | null>(null);
+
   const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
+
   const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
+
   const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
+
   const [lat, setLat] = useState<string>("");
+
   const [lon, setLon] = useState<string>("");
+
+  const isLarge = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     const options: PositionOptions = {
@@ -94,6 +107,7 @@ function App() {
       timeout: 5000,
       maximumAge: 0,
     };
+
     navigator.geolocation.getCurrentPosition(
       getPosSuccess,
       getPosError,
@@ -103,12 +117,14 @@ function App() {
 
   function getPosSuccess(pos: GeolocationPosition) {
     const { latitude, longitude } = pos.coords;
+
     setCenter([latitude, longitude]);
   }
 
   function getPosError(err: GeolocationPositionError) {
     console.warn(`ERROR(${err.code}): ${err.message}`);
   }
+
   useEffect(() => {
     if (excalidraw == null) return;
     // console.log("loaded: ", excalidraw);
@@ -133,21 +149,21 @@ function App() {
           const fractionX = deltaX / width;
           const fractionY = deltaY / height;
 
-          const lat = center![0] - fractionY * boxHeight;
-          const long = center![1] - fractionX * boxWidth;
+          const lat = center[0] - fractionY * boxHeight;
+          const long = center[1] - fractionX * boxWidth;
 
           newWaypoints.push([lat, long]);
         });
       }
 
       if (element.type === "line") {
-        const deltaX = element.x; // element.points[1][0] - element.points[0][0];
-        const deltaY = element.y; // element.points[1][1] - element.points[0][1];
+        const deltaX = element.x;
+        const deltaY = element.y;
         const fractionX = deltaX / width;
         const fractionY = deltaY / height;
 
-        const lat = center![0] - fractionY * boxHeight;
-        const long = center![1] - fractionX * boxWidth;
+        const lat = center[0] - fractionY * boxHeight;
+        const long = center[1] - fractionX * boxWidth;
 
         newWaypoints.push([lat, long]);
       }
@@ -172,75 +188,47 @@ function App() {
     setWaypoints(newWaypoints);
   }, [excalidraw, center]);
 
-  console.log(center, { waypoints });
-
   return (
-    <div className="h-screen w-screen">
-      <ModeToggle />
+    <div>
+      <div>HEADER</div>
 
-      <input
-        type="text"
-        placeholder="Latitude"
-        className="input input-bordered"
-        value={lat}
-        onChange={(e) => setLat(e.target.value)}
-      />
+      <main className="min-h-screen flex w-full p-8">
+        <ResizablePanelGroup
+          direction={isLarge ? "horizontal" : "vertical"}
+          className="w-full !h-auto grow rounded-box"
+        >
+          <ResizablePanel className="relative">
+            <MapContainer
+              ref={map}
+              className="w-full h-full"
+              center={center}
+              zoom={16}
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                attribution={ATTRIBUTION_MARKUP}
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-      <input
-        type="text"
-        placeholder="Longitude"
-        className="input input-bordered"
-        value={lon}
-        onChange={(e) => setLon(e.target.value)}
-      />
+              <Marker position={center!} />
 
-      <Button
-        onClick={() =>
-          setCenter([Number.parseFloat(lat), Number.parseFloat(lon)])
-        }
-        className="btn btn-success"
-      >
-        Update Center
-      </Button>
+              {waypoints.map((waypoint, index) => {
+                return <Marker key={index} position={waypoint} />;
+              })}
 
-      <div className="grid grid-rows-2 md:grid-rows-none gap-2 md:grid-cols-2 h-full w-full">
-        <div className="relative">
-          <MapContainer
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "absolute",
-              zIndex: 0,
-            }}
-            center={center ? center : [33.6459, -117.842717]}
-            zoom={16}
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution={ATTRIBUTION_MARKUP}
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+              {waypoints.length && <Routes latLngTuples={waypoints} />}
+            </MapContainer>
+          </ResizablePanel>
 
-            <Marker position={center!} />
+          <ResizableHandle />
 
-            {waypoints.map((waypoint, index) => {
-              return <Marker key={index} position={waypoint} />;
-            })}
+          <ResizablePanel>
+            <Excalidraw excalidrawAPI={setExcalidraw} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </main>
 
-            <Routes latLngTuples={waypoints} />
-          </MapContainer>
-        </div>
-
-        <div className="w-full h-full">
-          <Excalidraw excalidrawAPI={setExcalidraw} />
-          <Button
-            onClick={handleDraw}
-            className="absolute bottom-0.5 right-0 z-50"
-          >
-            Draw on Map
-          </Button>
-        </div>
-      </div>
+      <div>FOOTER</div>
     </div>
   );
 }
