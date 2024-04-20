@@ -16,18 +16,18 @@ export type LayoutProps = {
 export default function Layout(props: LayoutProps) {
 	return (
 		<html>
-			<UserProvider>
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="system"
-					enableSystem
-					disableTransitionOnChange
-				>
-					<body>
+			<body>
+				<UserProvider>
+					<ThemeProvider
+						attribute="class"
+						defaultTheme="system"
+						enableSystem
+						disableTransitionOnChange
+					>
 						<div style={{ display: "contents" }}>{props.children}</div>
-					</body>
-				</ThemeProvider>
-			</UserProvider>
+					</ThemeProvider>
+				</UserProvider>
+			</body>
 		</html>
 	);
 }
