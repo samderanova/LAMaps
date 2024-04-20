@@ -2,3 +2,8 @@ numpy
 fastapi
 osmnx
 python-dotenv
+fastapi[all]
+pygame
+googlemaps
+git+https://github.com/EricPedley/postman_problems.git
+opencv-python
