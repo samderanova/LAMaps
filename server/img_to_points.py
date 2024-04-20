@@ -25,13 +25,25 @@ def sectionize(img: cv.Mat):
     visited = set()
     def neighbors(x,y):
         return [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y-1), (x-1,y+1), (x+1,y-1), (x+1,y+1)]
+
+    def is_intersection(x,y):
+        neighbor_diffs = [
+            (nx-x, ny-y) for nx, ny in neighbors(x, y) if 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1] and skeleton[nx, ny] > 0
+        ]
+
+        # for every subset of 3
+        for v1, v2, v3 in combinations(neighbor_diffs, 3):
+            # if all 3 are orthogonal or opposite, return true
+            if all([
+                np.dot(v1, v2) <= 0,
+                np.dot(v1, v3) <= 0,
+                np.dot(v2, v3) <= 0
+            ]):
+                return True
+        return False
     def dfs(x,y,section_index):
         sections[section_index].append((y,x))
         nonlocal last_section_index
-        num_nonzero_aa_neighbors = sum( # aa = axis aligned (no diagonals)
-            1 for nx, ny in neighbors(x, y)[:4]
-            if 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1] and skeleton[nx, ny] > 0
-        )
 
         for nx, ny in neighbors(x, y):
             in_bounds = 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1]
@@ -40,7 +52,7 @@ def sectionize(img: cv.Mat):
                 continue
 
             visited.add((nx, ny))
-            if num_nonzero_aa_neighbors > 2:
+            if is_intersection(x, y):
                 last_section_index+=1
                 dfs(nx, ny, last_section_index)
             else:
