@@ -6,7 +6,7 @@ import { MapContainer, TileLayer } from "react-leaflet";
 
 import "leaflet-routing-machine";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
 	createElementHook,
 	createElementObject,
@@ -72,14 +72,35 @@ export function Routes(props: RoutesProps) {
  */
 const useRouter = createElementHook(createRouter);
 
-const latlngTuples: Array<L.LatLngTuple> = [
-	[51.506, -0.09],
-	[51.507, -0.08],
-	[51.508, -0.07],
-];
-
 export default function Map() {
-	return (
+	const [latLngTuples, setLatLangTuples] = useState<Array<L.LatLngTuple>>([]);
+
+	useEffect(() => {
+		const options: PositionOptions = {
+			enableHighAccuracy: true,
+			timeout: 5000,
+			maximumAge: 0,
+		};
+
+		navigator.geolocation.getCurrentPosition(
+			getPosSuccess,
+			getPosError,
+			options,
+		);
+	}, []);
+
+	function getPosSuccess(pos: GeolocationPosition) {
+		const { latitude, longitude } = pos.coords;
+		setLatLangTuples([...latLngTuples, [latitude, longitude]]);
+	}
+
+	function getPosError(err: GeolocationPositionError) {
+		console.warn(`ERROR(${err.code}): ${err.message}`);
+	}
+
+	console.log(latLngTuples);
+
+	return latLngTuples.length ? (
 		<MapContainer
 			style={{
 				width: "100%",
@@ -87,7 +108,7 @@ export default function Map() {
 				position: "absolute",
 				zIndex: 0,
 			}}
-			center={[51.505, -0.09]}
+			center={latLngTuples[0]}
 			zoom={13}
 			scrollWheelZoom={true}
 		>
@@ -96,7 +117,7 @@ export default function Map() {
 				url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 			/>
 
-			<Routes latLngTuples={latlngTuples} />
+			<Routes latLngTuples={latLngTuples} />
 		</MapContainer>
-	);
+	) : null;
 }
