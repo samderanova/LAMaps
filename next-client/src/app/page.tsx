@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 
-import { type FormEvent, useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type Coordinate from "@/types/Coordinate";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import dynamic from "next/dynamic";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
 
 const Excalidraw = dynamic(
@@ -28,17 +27,10 @@ const Excalidraw = dynamic(
 export function ModeToggle() {
   const { setTheme } = useTheme();
 
-<<<<<<< HEAD
   const handleThemeChange = (theme: string) => {
     document.documentElement.setAttribute("data-theme", theme);
     setTheme(theme);
   };
-=======
-	const handleThemeChange = (theme: string) => {
-		document.documentElement.setAttribute("data-theme", theme);
-		setTheme(theme);
-	};
->>>>>>> main
 
   return (
     <DropdownMenu>
@@ -96,7 +88,7 @@ function App() {
     setImagePoints(imagePointsList.map((c) => [c.latitude, c.longitude]));
   }
 
-  async function sendLatLon(e: FormEvent<HTMLFormElement>) {
+  async function sendLatLon(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const res = await fetch("/maps/latlon", {
       method: "POST",
