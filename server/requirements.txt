@@ -1,5 +1,5 @@
 numpy
-fastapi
+fastapi[all]
 pygame
 googlemaps
 python-dotenv

@@ -16,14 +16,13 @@ def generate_points(text: str):
     # convert to uppercase
     pts = []
     for i, char in enumerate(text.upper()):
-        if char == ' ':
+        if char == " ":
             continue
-        shifted_pts = [
-            (x+i, y) for x, y in text_pts[char]
-        ]
+        shifted_pts = [(x + i, y) for x, y in text_pts[char]]
         pts.extend(shifted_pts)
     return pts
-    
+
+
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "hello"}
