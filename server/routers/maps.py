@@ -17,8 +17,7 @@ class Coordinate(BaseModel):
     longitude: float
 
 
-@router.post("/coordinates", status_code=status.HTTP_201_CREATED)
-async def coordinate(coordinates: list[list[int]], starting_point: tuple[float, float]):
+def coordinate(coordinates: list[tuple[int,int]], starting_point: tuple[float, float]):
     matrix = np.array(coordinates)
     start_array = np.array(starting_point)
 
@@ -47,4 +46,9 @@ async def get_coords_from_image() -> list[Coordinate]:
 async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], image: UploadFile = File(optional=True),):
     cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
     points = points_from_img(cv_img)
-    print(points)
+    starting_pt = (float(latitude), float(longitude))
+    gps_coords = coordinate(points, starting_pt)
+
+    return {
+        "points": gps_coords
+    }

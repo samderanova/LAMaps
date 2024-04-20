@@ -166,12 +166,13 @@ function App() {
 		formData.set("longitude", lon);
 		formData.set("image", blob);
 
-    console.log(formData)
 
-		await fetch("/api/maps/coordinatize", {
+		const res = await fetch("/api/maps/coordinatize", {
 			method: "POST",
 			body: formData,
 		});
+		
+		console.log(res);
 
 		setWaypoints(newWaypoints);
 	}, [excalidraw, center]);
