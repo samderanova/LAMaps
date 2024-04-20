@@ -1,12 +1,17 @@
 from fastapi import FastAPI
 from hard_coded_text_pts import text_pts
+from routers import maps
 
 app = FastAPI()
 
+
+app.include_router(maps.router, prefix="/maps")
+
+
 def generate_points(text: str):
-    '''
+    """
     Generate points in 2d that if traced would draw out `text`. Returns a list of float tuples. The scale is such that each line of text is ~1 unit tall
-    '''
+    """
 
     # convert to uppercase
     pts = []
@@ -20,6 +25,7 @@ def generate_points(text: str):
     return pts
     
 print(generate_points("LA HACKS"))
+
 
 @app.get("/")
 async def root() -> dict[str, str]:
