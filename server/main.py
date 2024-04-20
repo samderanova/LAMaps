@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(maps.router, prefix="/maps")
+app.include_router(maps.router, prefix="/api")
 
 
 def generate_points(text: str):
@@ -35,7 +35,7 @@ def generate_points(text: str):
         pts.extend(shifted_pts)
     return pts
 
-@app.post("/img_to_points")
+@app.post("/map")
 async def img_to_points(file: UploadFile = File(...)) -> list[tuple[float, float]]:
     """
     Converts an image to a list of points that can be used to draw the image
@@ -43,7 +43,7 @@ async def img_to_points(file: UploadFile = File(...)) -> list[tuple[float, float
     # read image
     contents = await file.read()
     img = cv.imdecode(np.frombuffer(contents, np.uint8), cv.IMREAD_COLOR)
-    points = img_to_points(img)
+    points = points_from_img(img)
     return points
 
 

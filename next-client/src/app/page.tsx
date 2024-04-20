@@ -161,7 +161,7 @@ function App() {
       },
     });
 
-    await fetch("/maps/...", {
+    await fetch("/api/map", {
       method: "POST",
       body: blob,
       headers: {
