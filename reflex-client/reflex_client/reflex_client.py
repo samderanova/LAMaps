@@ -6,15 +6,13 @@ class UseLeafletContext(rx.Fragment, NoSSRComponent):
     library = "@react-leaflet/core"
     tag = "useLeafletContext"
 
-    def _get_hooks(self) -> str:
-        return """
-"""
+    def render(self) -> str:
+        return ""
 
 
 class MapContainer(NoSSRComponent):
-    library = "react-leaflet"
-    tag = "MapContainer"
-    lib_dependencies: list[str] = ["leaflet", "leaflet-routing-machine"]
+    library = "@ap0nia/leaflet-with-routing"
+    tag = "MapThingy"
 
     center: rx.Var[list[float]]
     zoom: rx.Var[int]
@@ -23,39 +21,37 @@ class MapContainer(NoSSRComponent):
     def _get_custom_code(self) -> str:
         return """
     import "leaflet/dist/leaflet.css";
-    import L from 'leaflet';
-    import 'leaflet-routing-machine';
     """
-
-
-class Bruh(NoSSRComponent):
-    def render(self):
-        return MapContainer
 
 
 class Leaflet(rx.Fragment):
     def _get_custom_code(self) -> str:
-        return """
-"""
+        return """ """
 
 
 class Lol(rx.Fragment):
     def _get_imports(self) -> rx.utils.imports.ImportDict:
         return rx.utils.imports.merge_imports(
             super()._get_imports(),
-            {"react": {rx.utils.imports.ImportVar(tag="useEffect")}},
+            {
+                "react": {rx.utils.imports.ImportVar(tag="useEffect")},
+                "@react-leaflet/core": {
+                    rx.utils.imports.ImportVar(tag="useLeafletContext")
+                },
+            },
         )
 
     def _get_hooks(self):
         return """
+const context = useLeafletContext()
+
 const doSomething = async () => {
     const L = await import('leaflet');
-    await import('leaflet-routing-machine');
-    console.log("L :", L.Router, window.L.Router)
+    console.log("L :", L.Routing)
 }
 useEffect(() => {
     doSomething()
-}, [])
+}, [context])
 """
 
 
@@ -87,11 +83,37 @@ class Popup(NoSSRComponent):
     tag = "Popup"
 
 
+class UseMap(rx.Component):
+    url: rx.Var[str]
+    tag = "Mapper"
+
+    def _get_custom_code(self) -> str | None:
+        return f"""
+import {{ useRef }} from "react"
+import {{ useLoader }} from '@react-three/fiber'
+import {{ GLTFLoader }} from 'three/addons/loaders/GLTFLoader.js'
+    
+function Mapper({{children}}) {{
+    const context = useLeafletContext()
+
+    return (
+        <div map={map}>
+            {children}
+        </div>
+    )
+}}
+"""
+
+    def _render(self, props: dict[str, Any] | None = None) -> Tag:
+        return Tag(name="Loader", props={"url": self.url})
+
+
 def index():
     return rx.center(
         Leaflet.create(),
-        Bruh.create(),
+        # UseLeafletContext.create(),
         MapContainer.create(
+            Lol.create(),
             TileLayer.create(
                 attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -99,8 +121,6 @@ def index():
             Marker.create(
                 Popup.create("Hello, world"), position=[51.505, -0.09]
             ),
-            UseLeafletContext.create(),
-            Lol.create(),
             center=[51.505, -0.09],
             zoom=13,
             scroll_wheel_zoom=True,
