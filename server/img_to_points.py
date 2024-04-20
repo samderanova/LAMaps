@@ -23,34 +23,28 @@ def sectionize(img: cv.Mat):
     sections = defaultdict(list)
     last_section_index = 0
     visited = set()
-
     def neighbors(x,y):
         return [(x-1,y), (x+1,y), (x,y-1), (x,y+1), (x-1,y-1), (x-1,y+1), (x+1,y-1), (x+1,y+1)]
+    def dfs(x,y,section_index):
+        sections[section_index].append((y,x))
+        nonlocal last_section_index
+        num_nonzero_aa_neighbors = sum( # aa = axis aligned (no diagonals)
+            1 for nx, ny in neighbors(x, y)[:4]
+            if 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1] and skeleton[nx, ny] > 0
+        )
 
-    def dfs(start_x,start_y,start_section_index):
-        exploration = [(start_x, start_y, start_section_index)]
-        while len(exploration) > 0:
-            x,y,section_index = exploration.pop(0)
-            sections[section_index].append((y,x))
-            nonlocal last_section_index
-            num_nonzero_aa_neighbors = sum( # aa = axis aligned (no diagonals)
-                1 for nx, ny in neighbors(x, y)[:4]
-                if 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1] and skeleton[nx, ny] > 0
-            )
+        for nx, ny in neighbors(x, y):
+            in_bounds = 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1]
+            not_visited = (nx, ny) not in visited
+            if not (in_bounds and not_visited and skeleton[nx, ny] > 0):
+                continue
 
-            for nx, ny in neighbors(x, y):
-                in_bounds = 0 <= nx < skeleton.shape[0] and 0 <= ny < skeleton.shape[1]
-                not_visited = (nx, ny) not in visited
-                if not (in_bounds and not_visited and skeleton[nx, ny] > 0):
-                    continue
-
-                visited.add((nx, ny))
-                if num_nonzero_aa_neighbors > 2:
-                    print("!!")
-                    last_section_index+=1
-                    exploration.append([nx, ny, last_section_index])
-                else:
-                    exploration.append([nx, ny, section_index])
+            visited.add((nx, ny))
+            if num_nonzero_aa_neighbors > 2:
+                last_section_index+=1
+                dfs(nx, ny, last_section_index)
+            else:
+                dfs(nx, ny, section_index)
     
     for x in range(skeleton.shape[0]):
         for y in range(skeleton.shape[1]):
@@ -61,8 +55,6 @@ def sectionize(img: cv.Mat):
     return sections.values()    
 
 def linearize_section(section: list[tuple[int, int]], angle_threshold: float) -> list[tuple[int, int]]:
-    if len(section) < 5:
-        return section
     reduced_section = [
         section[0], section[1]
     ]
