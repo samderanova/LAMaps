@@ -1,5 +1,6 @@
 numpy
 fastapi[all]
 pygame
+osmnx
 googlemaps
 python-dotenv
