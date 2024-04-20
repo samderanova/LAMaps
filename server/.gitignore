@@ -5,3 +5,6 @@ cache/
 
 # Graph representation
 LA.graphml
+
+# env
+.env

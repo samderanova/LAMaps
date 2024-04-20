@@ -1,3 +1,4 @@
+import os
 from functools import cache
 
 import numpy as np
@@ -9,10 +10,14 @@ router = APIRouter()
 # 1 Degree Lon Lat to Quarter Mile
 SCALING_FACTOR = 0.0036231884
 
+LA_MAP_PATH = os.getenv("LA_MAP_PATH")
+if LA_MAP_PATH is None:
+    raise Exception("env LA_MAP_PATH required")
+
 
 @cache
 def get_map():
-    return ox.load_graphml("./LA.graphml")
+    return ox.load_graphml(LA_MAP_PATH)
 
 
 def scale_and_place(coordinates: list[list[int]], starting_point: tuple[float, float]):
