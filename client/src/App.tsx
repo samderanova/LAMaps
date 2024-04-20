@@ -1,10 +1,18 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import "./App.css";
 import Map from "./Map";
+import Coordinate from "./types/Coordinate";
 
 function App() {
-	const [latitude, setLatitude] = useState("");
-	const [longitude, setLongitude] = useState("");
+	const [latitude, setLatitude] = useState<string>("");
+	const [longitude, setLongitude] = useState<string>("");
+	const [imagePoints, setImagePoints] = useState<L.LatLngTuple[]>([]);
+
+	async function pullImage() {
+		const res = await fetch("/maps/image");
+		const imagePointsList: Coordinate[] = await res.json();
+		setImagePoints(imagePointsList.map((c) => [c.latitude, c.longitude]));
+	}
 
 	async function sendLatLon(e: FormEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -19,12 +27,15 @@ function App() {
 			},
 		});
 		const json = await res.json();
-		console.log(json);
 	}
 
-	return (
+	useEffect(() => {
+		pullImage();
+	}, []);
+
+	return imagePoints.length > 0 ? (
 		<div className="h-screen w-screen">
-			<Map />
+			<Map points={imagePoints} />
 			<div className="card px-5 py-4 border-2 max-w-xs mx-4 my-3 z-10 bg-white absolute">
 				<h1 className="text-3xl">LAMaps</h1>
 				<p className="my-3">Please input latitude and longitude.</p>
@@ -55,7 +66,7 @@ function App() {
 				</form>
 			</div>
 		</div>
-	);
+	) : null;
 }
 
 export default App;

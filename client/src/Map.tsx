@@ -72,8 +72,12 @@ export function Routes(props: RoutesProps) {
  */
 const useRouter = createElementHook(createRouter);
 
-export default function Map() {
-	const [latLngTuples, setLatLangTuples] = useState<Array<L.LatLngTuple>>([]);
+interface MapProps {
+	points?: L.LatLngTuple[];
+}
+
+export default function Map({ points }: MapProps) {
+	const [latLngTuples, setLatLangTuples] = useState<L.LatLngTuple[]>([]);
 
 	useEffect(() => {
 		const options: PositionOptions = {
@@ -82,11 +86,15 @@ export default function Map() {
 			maximumAge: 0,
 		};
 
-		navigator.geolocation.getCurrentPosition(
-			getPosSuccess,
-			getPosError,
-			options,
-		);
+		if (points !== undefined) {
+			setLatLangTuples(points);
+		} else {
+			navigator.geolocation.getCurrentPosition(
+				getPosSuccess,
+				getPosError,
+				options,
+			);
+		}
 	}, []);
 
 	function getPosSuccess(pos: GeolocationPosition) {
