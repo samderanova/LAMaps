@@ -98,8 +98,6 @@ export default function Map() {
 		console.warn(`ERROR(${err.code}): ${err.message}`);
 	}
 
-	console.log(latLngTuples);
-
 	return latLngTuples.length ? (
 		<MapContainer
 			style={{

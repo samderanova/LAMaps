@@ -1,8 +1,26 @@
+import { FormEvent, useState } from "react";
 import "./App.css";
 import Map from "./Map";
 
 function App() {
-	async function sendLatLon() { }
+	const [latitude, setLatitude] = useState("");
+	const [longitude, setLongitude] = useState("");
+
+	async function sendLatLon(e: FormEvent<HTMLFormElement>) {
+		e.preventDefault();
+		const res = await fetch("/maps/latlon", {
+			method: "POST",
+			body: JSON.stringify({
+				latitude: Number.parseFloat(latitude),
+				longitude: Number.parseFloat(longitude),
+			}),
+			headers: {
+				"Content-Type": "application/json",
+			},
+		});
+		const json = await res.json();
+		console.log(json);
+	}
 
 	return (
 		<div className="h-screen w-screen">
@@ -15,7 +33,9 @@ function App() {
 						type="text"
 						placeholder="Latitude"
 						className="input input-bordered input-success w-full max-w-xs mb-3"
-						pattern="[0-9]+(.[0-9]+)"
+						pattern="-?[0-9]+(.[0-9]+)"
+						value={latitude}
+						onChange={(e) => setLatitude(e.target.value)}
 						required
 					/>
 					<br />
@@ -23,7 +43,9 @@ function App() {
 						type="text"
 						placeholder="Longitude"
 						className="input input-bordered input-success w-full max-w-xs mb-3"
-						pattern="[0-9]+(.[0-9]+)"
+						pattern="-?[0-9]+(.[0-9]+)"
+						value={longitude}
+						onChange={(e) => setLongitude(e.target.value)}
 						required
 					/>
 					<br />
