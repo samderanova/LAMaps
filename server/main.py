@@ -24,9 +24,6 @@ def generate_points(text: str):
         pts.extend(shifted_pts)
     return pts
     
-print(generate_points("LA HACKS"))
-
-
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "hello"}
