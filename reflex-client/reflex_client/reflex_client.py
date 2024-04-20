@@ -1,50 +1,20 @@
-# See https://github.com/reflex-dev/reflex/issues/1291#issuecomment-1643858964
 import reflex as rx
-from reflex.style import Style
 from reflex.components.component import NoSSRComponent
 
 
-class LeafletLib(rx.Component):
-    def _get_imports(self):
-        return {}
+class UseLeafletContext(rx.Fragment, NoSSRComponent):
+    library = "@react-leaflet/core"
+    tag = "useLeafletContext"
 
-        # leaflet_routing_machine = ImportVar()
-        # leaflet = ImportVar()
-        # return {
-        #     "leaflet": [leaflet],
-        #     "leaflet-routing-machine": [leaflet_routing_machine],
-        # }
-
-    @classmethod
-    def create(cls, *children, **props):
-        custom_style = props.pop("style", {})
-
-        # Transfer style props to the custom style prop.
-        for key, value in props.items():
-            if key not in cls.get_fields():
-                custom_style[key] = value
-
-        # Create the component.
-        return super().create(
-            *children,
-            **props,
-            custom_style=Style(custom_style),
-        )
-
-    def _add_style(self, style):
-        self.custom_style = self.custom_style or {}
-        self.custom_style.update(style)
-
-    def _render(self):
-        out = super()._render()
-        return out.add_props(style=self.custom_style).remove_props(
-            "custom_style"
-        )
+    def _get_hooks(self) -> str:
+        return """
+"""
 
 
-class MapContainer(LeafletLib):
+class MapContainer(NoSSRComponent):
     library = "react-leaflet"
     tag = "MapContainer"
+    lib_dependencies: list[str] = ["leaflet", "leaflet-routing-machine"]
 
     center: rx.Var[list[float]]
     zoom: rx.Var[int]
@@ -52,152 +22,94 @@ class MapContainer(LeafletLib):
 
     def _get_custom_code(self) -> str:
         return """
-import "leaflet/dist/leaflet.css";
-
-const MapContainer = dynamic(async () => {
-    const mod = await import('react-leaflet')
-
-    await import('leaflet-routing-machine')
-
-    return mod.MapContainer
-}, { ssr: false });
-"""
+    import "leaflet/dist/leaflet.css";
+    import L from 'leaflet';
+    import 'leaflet-routing-machine';
+    """
 
 
-class Huh(NoSSRComponent):
-    library = "@react-leaflet/core"
-    tag = "useLeafletContext"
-
-    def _get_hooks(self) -> str:
-        return """
-    const context = useLeafletContext();
-
-    // if (L.Routing !== undefined) {
-    //     const routerControl = L.Routing.control({
-    //         router: L.Routing.osrmv1(),
-    //         plan: L.Routing.plan([]),
-    //     });
-
-    //     useEffect(() => {
-    //         return () => {
-    //         };
-    //     }, [context.map]);
-    // }
-"""
+class Bruh(NoSSRComponent):
+    def render(self):
+        return MapContainer
 
 
-class TileLayer(LeafletLib):
-    library = "react-leaflet"
-    tag = "TileLayer"
-
+class Leaflet(rx.Fragment):
     def _get_custom_code(self) -> str:
         return """
-const TileLayer = dynamic(async () => {
-    const mod = await import('react-leaflet')
-    return mod.TileLayer
-}, { ssr: false });
 """
+
+
+class Lol(rx.Fragment):
+    def _get_imports(self) -> rx.utils.imports.ImportDict:
+        return rx.utils.imports.merge_imports(
+            super()._get_imports(),
+            {"react": {rx.utils.imports.ImportVar(tag="useEffect")}},
+        )
+
+    def _get_hooks(self):
+        return """
+const doSomething = async () => {
+    const L = await import('leaflet');
+    await import('leaflet-routing-machine');
+    console.log("L :", L.Router, window.L.Router)
+}
+useEffect(() => {
+    doSomething()
+}, [])
+"""
+
+
+class LeafletRoutingMachine(rx.Fragment):
+    library = "leaflet-routing-machine"
+
+    def render(self) -> str:
+        return ""
+
+
+class TileLayer(NoSSRComponent):
+    library = "react-leaflet"
+    tag = "TileLayer"
 
     attribution: rx.Var[str]
     url: rx.Var[str]
 
 
-class UseMap(LeafletLib):
-    library = "react-leaflet"
-    tag = "useMap"
-
-
-class UseLeafletContext(rx.Fragment):
-    library = "@react-leaflet/core"
-    tag = "useLeafletContext"
-
-    def _get_imports(self):
-        return {}
-
-    def _get_custom_code(self) -> str:
-        return """
-const useLeafletContext = dynamic(async () => {
-    const mod = await import('@react-leaflet/core')
-    return mod.useLeafletContext
-}, { ssr: false });
-"""
-
-
-class Marker(LeafletLib):
+class Marker(NoSSRComponent):
     library = "react-leaflet"
     tag = "Marker"
-
-    def _get_custom_code(self) -> str:
-        return """
-const Marker = dynamic(async () => {
-    const mod = await import('react-leaflet')
-    return mod.Marker
-}, { ssr: false });
-"""
 
     position: rx.Var[list[float]]
     icon: rx.Var[dict]
 
 
-class Popup(LeafletLib):
+class Popup(NoSSRComponent):
     library = "react-leaflet"
     tag = "Popup"
 
-    def _get_custom_code(self) -> str:
-        return """
-const Popup = dynamic(async () => {
-    const mod = await import('react-leaflet')
-    return mod.Popup
-}, { ssr: false });
-"""
-
-
-class L(LeafletLib):
-    library = "leaflet"
-    tag = "L"
-    is_default = True
-
-    def _get_custom_code(self) -> str:
-        return """
-const L = dynamic(async () => {
-    const mod = await import('leaflet')
-    await import('leaflet-routing-machine')
-    return mod
-}, { ssr: false });
-"""
-
-
-map_container = MapContainer.create
-tile_layer = TileLayer.create
-use_map = UseMap.create
-marker = Marker.create
-popup = Popup.create
-huh = Huh.create
-use_leaflet_context = UseLeafletContext
-l = L.create
-
 
 def index():
-    return rx.box(
-        l(),
-        # use_leaflet_context(),
-        map_container(
-            tile_layer(
+    return rx.center(
+        Leaflet.create(),
+        Bruh.create(),
+        MapContainer.create(
+            TileLayer.create(
                 attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             ),
-            huh(),
-            marker(popup("Hello, world"), position=[51.505, -0.09]),
+            Marker.create(
+                Popup.create("Hello, world"), position=[51.505, -0.09]
+            ),
+            UseLeafletContext.create(),
+            Lol.create(),
             center=[51.505, -0.09],
             zoom=13,
             scroll_wheel_zoom=True,
-            height="100%",
+            height="98vh",
             width="100%",
         ),
-        width="100vw",
-        height="100vh",
     )
 
 
+# Add state and page to the app.
 app = rx.App()
 app.add_page(index)
