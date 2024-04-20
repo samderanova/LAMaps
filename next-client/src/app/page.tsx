@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -11,13 +11,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import dynamic from "next/dynamic";
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
+
+const Excalidraw = dynamic(
+  async () => (await import("@excalidraw/excalidraw")).Excalidraw,
+  {
+    ssr: false,
+  },
+);
 
 export function ModeToggle() {
   const { setTheme } = useTheme();
 
   const handleThemeChange = (theme: string) => {
     document.documentElement.setAttribute("data-theme", theme);
-    setTheme(theme)
+    setTheme(theme);
   };
 
   return (
@@ -45,10 +54,26 @@ export function ModeToggle() {
 }
 
 export default function Page() {
+  const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
+
+  useEffect(() => {
+    if (excalidraw == null) return;
+    console.log("loaded: ", excalidraw);
+  }, [excalidraw]);
+
+  const handleDraw = useCallback(() => {
+    console.log("state: ", excalidraw?.getAppState());
+    console.log("drawing elements: ", excalidraw?.getSceneElements());
+  }, [excalidraw]);
+
   return (
-    <div className="bg-primary">
+    <div>
       <h1>Hello, World</h1>
       <ModeToggle />
+      <div style={{ height: "500px" }}>
+        <Excalidraw excalidrawAPI={setExcalidraw} />
+      </div>
+      <Button onClick={handleDraw}>Draw on Map</Button>
     </div>
   );
 }
