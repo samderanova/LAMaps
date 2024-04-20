@@ -7,8 +7,9 @@ from fastapi import APIRouter, status
 
 router = APIRouter()
 
-# 1 Degree Lon Lat to Quarter Mile
-SCALING_FACTOR = 0.0036231884
+# Each scaling factor is 1 quarter mile to degree.
+LAT_SCALING_FACTOR = 0.0036231884057971015
+LON_SCALING_FACTOR = 0.004578754578754579
 
 LA_MAP_PATH = os.getenv("LA_MAP_PATH")
 if LA_MAP_PATH is None:
@@ -21,10 +22,11 @@ def get_map():
 
 
 def scale_and_place(coordinates: list[list[int]], starting_point: tuple[float, float]):
-    matrix = np.array(coordinates)
+    matrix = np.array(coordinates, dtype=np.float64)
     start_array = np.array(starting_point)
 
-    matrix = matrix * SCALING_FACTOR
+    matrix[:, 0] = matrix[:, 0] * LAT_SCALING_FACTOR
+    matrix[:, 1] = matrix[:, 1] * LON_SCALING_FACTOR
     matrix = matrix + start_array
 
     return matrix
@@ -33,20 +35,24 @@ def scale_and_place(coordinates: list[list[int]], starting_point: tuple[float, f
 def get_loss_matrix(matrix):
     G = get_map()
 
-    lons = matrix[:, 0].tolist()
-    lats = matrix[:, 1].tolist()
+    lats = matrix[:, 0].tolist()
+    lons = matrix[:, 1].tolist()
 
-    node_ids = ox.distance.nearest_nodes(G, lons, lats)
+    node_ids = ox.distance.nearest_nodes(G, lats, lons)
     nodes = G.nodes()
 
     loss_matrix = []
     for i, node_id in enumerate(node_ids):
         node = nodes[node_id]
-        lon = node["y"] - matrix[i, 1]
-        lat = node["x"] - matrix[i, 0]
-        loss_matrix.append(np.array([lon, lat]))
+        lat = node["y"] - matrix[i, 0]
+        lon = node["x"] - matrix[i, 1]
+        loss_matrix.append(np.array([lat, lon]))
 
     return np.stack(loss_matrix)
+
+
+def get_loss_vector(loss_matrix):
+    return np.sum(loss_matrix, axis=0)
 
 
 def get_total_loss(loss_matrix):
@@ -54,6 +60,19 @@ def get_total_loss(loss_matrix):
     for vector in loss_matrix:
         total_loss += np.linalg.norm(vector)
     return total_loss
+
+
+def fit_to_map(matrix):
+    total_loss_per_iter = []
+    for _ in range(40):
+        loss_matrix = get_loss_matrix(matrix)
+        total_loss = get_total_loss(loss_matrix)
+        total_loss_per_iter.append(total_loss)
+
+        vector = get_loss_vector(loss_matrix)
+        matrix = matrix + vector * 0.1
+
+    return matrix, total_loss_per_iter
 
 
 @router.post("/coordinates", status_code=status.HTTP_201_CREATED)
@@ -64,7 +83,7 @@ async def coordinate(coordinates: list[list[int]], starting_point: tuple[float, 
 @router.post("/fit", status_code=status.HTTP_201_CREATED)
 async def fit(coordinates: list[list[int]], starting_point: tuple[float, float]):
     matrix = scale_and_place(coordinates, starting_point)
-    loss_matrix = get_loss_matrix(matrix)
-    total_loss = get_total_loss(loss_matrix)
-    print(total_loss)
-    return loss_matrix.tolist()
+
+    matrix, loss_curve = fit_to_map(matrix)
+
+    return {"coordinates": matrix.tolist(), "loss_curve": loss_curve}
