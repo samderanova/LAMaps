@@ -27,6 +27,7 @@ function App() {
 			},
 		});
 		const json = await res.json();
+		console.log(json);
 	}
 
 	useEffect(() => {

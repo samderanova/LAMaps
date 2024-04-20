@@ -25,8 +25,10 @@ async def coordinate(coordinates: list[list[int]], starting_point: tuple[float, 
 
 
 @router.post("/latlon", status_code=status.HTTP_200_OK)
-async def process_coords(coordinate: Coordinate) -> dict[str, float]:
-    return {"latitude": coordinate.latitude, "longitude": coordinate.longitude}
+async def process_coords(coordinate: Coordinate) -> Coordinate:
+    return Coordinate.model_validate(
+        {"latitude": coordinate.latitude, "longitude": coordinate.longitude}
+    )
 
 
 @router.get("/image", status_code=status.HTTP_200_OK)
