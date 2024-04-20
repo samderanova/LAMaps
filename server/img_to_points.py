@@ -63,6 +63,7 @@ def sectionize(img: cv.Mat):
             if skeleton[x, y] > 0 and (x, y) not in visited:
                 visited.add((x, y))
                 dfs(x, y, last_section_index)
+                last_section_index+=1
 
 
     # redo a bfs starting with leftmost point to make sure no lines cross within a section
@@ -72,7 +73,7 @@ def sectionize(img: cv.Mat):
         # find point with only 1 neighbor
         first_point = min(
             section,
-            key=lambda p: sum(1 for nx, ny in neighbors(p[0], p[1]) if (nx, ny) in section)
+            key=lambda p: len(neighbors(*p))
         )
         exploration = [first_point]
         section_visited = set()
@@ -157,7 +158,7 @@ def points_from_img(img: cv.Mat) -> list[tuple[int, int]]:
     pass
 
 if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
+    img = cv.imread(f"{CURRENT_FILEPATH}/stick_and_triangle.png")
     canvas = np.zeros_like(img)
 
     vertices, adjacencies = make_graph(img)
