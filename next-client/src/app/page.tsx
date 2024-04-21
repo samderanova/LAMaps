@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Marker, TileLayer } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
+import { NominatimCombobox } from "@/components/nominatim-combobox";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -144,26 +145,20 @@ function App() {
     setLoading(false);
   }, [excalidraw, center]);
 
+  console.log(map)
+
+  const handleSelectLocation = (coordinate: L.LatLngTuple) => {
+    setCenter(coordinate);
+    console.log('asdf', map.current)
+    map.current?.flyTo(coordinate, 18);
+  };
+
   return (
     <main className="w-full grow">
-      <div className="hero min-h-screen bg-base-200">
-        <div className="hero-content text-center">
-          <div className="max-w-md">
-            <h1 className="text-5xl font-bold">Hello there</h1>
-            <p className="py-6">
-              Provident cupiditate voluptatem et in. Quaerat fugiat ut assumenda
-              excepturi exercitationem quasi. In deleniti eaque aut repudiandae
-              et a id nisi.
-            </p>
-            <a href="/#demo" className="btn btn-primary">
-              Get Started
-            </a>
-          </div>
-        </div>
-      </div>
+      <div className="p-4 h-dvh flex flex-col justify-center items-center gap-2">
+        <NominatimCombobox onSelect={handleSelectLocation} />
 
-      <div className="h-dvh flex items-center">
-        <div className="w-full h-5/6 p-8">
+        <div className="w-full h-5/6">
           <ResizablePanelGroup
             direction={isLarge ? "horizontal" : "vertical"}
             id="demo"
