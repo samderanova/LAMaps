@@ -129,7 +129,14 @@ function App() {
         },
       });
 
-      const content = await coordinatize(mapBounds, blob, isSnap);
+      const content = await coordinatize(mapBounds, blob, isSnap).catch(
+        (error) => {
+          console.log("Error while coordinatizing: ", error);
+          setWaypoints(newWaypoints);
+        },
+      );
+
+      if (content == null) return;
 
       const decoded = atob(content.gpxFile);
 
@@ -171,7 +178,7 @@ function App() {
             bounds={initialBounds}
             scrollWheelZoom={true}
             zoomControl={false}
-            zoom={14}
+            zoom={12}
           >
             <div
               className="absolute inset-x-1 inset-y-1.5 text-center z-50"
