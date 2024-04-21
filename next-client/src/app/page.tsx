@@ -156,8 +156,6 @@ function App() {
   return (
     <main className="w-full grow">
       <div className="p-4 h-dvh flex flex-col justify-center items-center gap-2">
-        <NominatimCombobox onSelect={handleSelectLocation} />
-
         <div className="w-full h-5/6">
           <ResizablePanelGroup
             direction={isLarge ? "horizontal" : "vertical"}
@@ -167,11 +165,16 @@ function App() {
             <ResizablePanel className="relative">
               <MapContainer
                 ref={map}
-                className="w-full h-full !z-0"
+                className="relative w-full h-full !z-0"
                 center={center}
                 zoom={16}
                 scrollWheelZoom={true}
               >
+
+                <div className="absolute top-0 left-0 z-50" style={{ zIndex: 5000 }}>
+                  <NominatimCombobox onSelect={handleSelectLocation} />
+                </div>
+
                 <TileLayer
                   attribution={ATTRIBUTION_MARKUP}
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

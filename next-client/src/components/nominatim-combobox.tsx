@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useMap } from "react-leaflet";
 
 type NominatimLocation = {
   place_id: number;
@@ -41,6 +42,7 @@ export type NominatimComboboxProps = {
 };
 
 export function NominatimCombobox(props?: NominatimComboboxProps) {
+  const map = useMap();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [options, setOptions] = useState<Array<NominatimLocation>>([]);
@@ -100,6 +102,7 @@ export function NominatimCombobox(props?: NominatimComboboxProps) {
                   );
                   setOpen(false);
                   props?.onSelect?.([+option.lat, +option.lon]);
+                  map.flyTo([+option.lat, +option.lon]);
                 }}
               >
                 <Check
