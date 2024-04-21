@@ -148,7 +148,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [excalidraw, center, mapBounds]);
+  }, [excalidraw, center, mapBounds, isSnap]);
 
   const waypointsPaired = waypoints.reduce((acc, cur, index) => {
     acc.push([cur]);
