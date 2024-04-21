@@ -9,7 +9,7 @@ import { cn, coordinatize } from "@/lib/utils";
 
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Polyline, Marker, TileLayer } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
 import { NominatimCombobox } from "@/components/nominatim-combobox";
@@ -216,7 +216,7 @@ function App() {
 
               <button
                 className={"btn btn-primary btn-outline"}
-                onClick={() => { }}
+                onClick={() => {}}
                 disabled={gpxHref === ""}
               >
                 <a href={gpxHref} download={gpxFilename}>
