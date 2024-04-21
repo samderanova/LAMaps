@@ -14,8 +14,9 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Marker, TileLayer } from "react-leaflet";
+import { Polyline, Marker, TileLayer } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
+import { Routes } from "./Map";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -131,13 +132,11 @@ function App() {
       },
     });
 
-		const formData = new FormData();
-		formData.set("latitude", "33.6459");
-		formData.set("longitude", "-117.842717");
-		formData.set("image", blob);
-    formData.set("max_points", '20');
-
-
+    const formData = new FormData();
+    formData.set("latitude", "33.6459");
+    formData.set("longitude", "-117.842717");
+    formData.set("image", blob);
+    formData.set("max_points", "20");
 
     const res = await fetch("/api/maps/coordinatize", {
       method: "POST",
@@ -146,12 +145,21 @@ function App() {
 
     const content = await res.json();
 
-    const points = content.points;
+    const points: [number, number][] = content.points;
 
-    setWaypoints(newWaypoints);
+    setWaypoints(points);
 
     setLoading(false);
   }, [excalidraw, center]);
+
+  const waypointsPaired = waypoints.reduce((acc, cur, index) => {
+    acc.push([cur]);
+
+    if (index > 0) {
+      acc[index - 1]?.push(cur);
+    }
+    return acc;
+  }, [] as L.LatLngTuple[][]);
 
   return (
     <main className="w-full grow">
@@ -196,6 +204,18 @@ function App() {
                 {waypoints.map((waypoint, index) => {
                   return <Marker key={index} position={waypoint} />;
                 })}
+
+                {waypointsPaired.length &&
+                  waypointsPaired.map((waypoint) => {
+                    return (
+                      <Polyline
+                        pathOptions={{ color: "red" }}
+                        positions={waypoint}
+                      />
+                    );
+                  })}
+
+                {/* waypoints.length && <Routes latLngTuples={waypoints} /> */}
               </MapContainer>
             </ResizablePanel>
 
