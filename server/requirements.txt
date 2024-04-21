@@ -4,4 +4,5 @@ pygame
 osmnx
 googlemaps
 python-dotenv
-opencv-python==4.7.0.72
+opencv-contrib-python
+git+https://github.com/EricPedley/postman_problems.git
