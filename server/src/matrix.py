@@ -20,8 +20,8 @@ def scale_and_place(
     coordinates: list[list[int]],
     ne: list[float, float],
     sw: list[float, float],
-    y_max_pixels: int = 400,
-    x_max_pixels: int = 400,
+    y_max_pixels,
+    x_max_pixels,
 ):
     north = ne[0]
     south = sw[0]
@@ -29,7 +29,7 @@ def scale_and_place(
     west = sw[1]
 
     matrix = np.array(coordinates, dtype=np.float64)
-    origin = np.array(south, west)
+    origin = np.array([south, west])
 
     lat_multiplier = (north - south) / y_max_pixels
     lon_multiplier = (east - west) / x_max_pixels
