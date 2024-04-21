@@ -9,7 +9,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { cn, coordinatize, saveFile } from "@/lib/utils";
+import { cn, coordinatize } from "@/lib/utils";
 
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
@@ -51,6 +51,8 @@ function App() {
 	const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
 	const [loading, setLoading] = useState(false);
 	const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+	const [gpxHref, setGpxHref] = useState<string>("");
+	const [gpxFilename, setGpxFilename] = useState<string>("");
 
 	const isLarge = useMediaQuery("(min-width: 768px)");
 
@@ -129,10 +131,16 @@ function App() {
 
 		const content = await coordinatize(center, mapBounds, blob);
 
-		const points: [number, number][] = content.points;
-		const fileEncoded = content.gpxFile;
+		const decoded = atob(content.gpxFile);
+		const decodedBlob = new Blob([decoded], {
+			type: "text/plain;charset=utf-8",
+		});
+		const filename = "encoded_data.gpx";
 
-		saveFile(fileEncoded);
+		setGpxHref(URL.createObjectURL(decodedBlob));
+		setGpxFilename(filename);
+
+		const points: [number, number][] = content.points;
 		setWaypoints(points);
 		setLoading(false);
 	}, [excalidraw, center, mapBounds]);
@@ -204,13 +212,25 @@ function App() {
 								excalidrawAPI={setExcalidraw}
 								theme={currentTheme === "light" ? THEME.LIGHT : THEME.DARK}
 							/>
-							<button
-								onClick={submitDrawing}
-								className="btn btn-primary btn-sm"
-							>
-								<span className={cn(loading && "loading")}></span>
-								<span>Submit</span>
-							</button>
+							<div className="flex flex-row w-full gap-2">
+								<button
+									onClick={submitDrawing}
+									className="btn btn-primary gap-0"
+								>
+									<span className={cn(loading && "loading me-2")}></span>
+									<span>Submit</span>
+								</button>
+
+								<button
+									className={"btn btn-primary btn-outline"}
+									onClick={() => { }}
+									disabled={gpxHref === ""}
+								>
+									<a href={gpxHref} download={gpxFilename}>
+										Download .gpx
+									</a>
+								</button>
+							</div>
 						</ResizablePanel>
 					</ResizablePanelGroup>
 				</div>
