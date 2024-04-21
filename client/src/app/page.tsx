@@ -15,217 +15,235 @@ import { NominatimCombobox } from "@/components/nominatim-combobox";
 import MapListener from "@/components/MapListener/MapListener";
 
 const ATTRIBUTION_MARKUP =
-  '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
+	'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
 
 const Excalidraw = dynamic(
-  async () => (await import("@excalidraw/excalidraw")).Excalidraw,
-  {
-    ssr: false,
-  },
+	async () => (await import("@excalidraw/excalidraw")).Excalidraw,
+	{
+		ssr: false,
+	},
 );
 
 const MapContainer = dynamic(
-  async () => {
-    const mod = await import("react-leaflet");
-    return mod.MapContainer;
-  },
-  {
-    loading: () => <p>Loading</p>,
-    ssr: false,
-  },
+	async () => {
+		const mod = await import("react-leaflet");
+		return mod.MapContainer;
+	},
+	{
+		loading: () => <p>Loading</p>,
+		ssr: false,
+	},
 );
 
 const boxWidth = -117.846837 - -117.837999;
 const boxHeight = 33.648 - 33.6432;
 
 function App() {
-  const map = useRef<L.Map | null>(null);
+	const map = useRef<L.Map | null>(null);
 
 	const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
 	const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
 	const [center, setCenter] = useState<L.LatLngTuple>([34.06886, -118.435036]);
 	const initialBounds = L.latLngBounds(
-		L.latLng(center[0]- 0.003, center[1] - 0.003),
-		L.latLng(center[0] + 0.003, center[1] + 0.003)
+		L.latLng(center[0] - 0.003, center[1] - 0.003),
+		L.latLng(center[0] + 0.003, center[1] + 0.003),
 	);
 	const [loading, setLoading] = useState(false);
-	const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(initialBounds);
+	const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(
+		initialBounds,
+	);
 	const [gpxHref, setGpxHref] = useState<string>("");
 	const [gpxFilename, setGpxFilename] = useState<string>("");
 
-  const { theme } = useTheme();
-  const prefersDark = useMediaQuery("prefers-color-scheme: dark");
-  const systemTheme = prefersDark ? "dark" : "light";
-  const currentTheme =
-    theme !== "light" && theme !== "dark" ? systemTheme : theme;
+	const [isSnap, setIsSnap] = useState<boolean>(true);
 
-  useEffect(() => {
-    const options: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0,
-    };
+	const { theme } = useTheme();
+	const prefersDark = useMediaQuery("prefers-color-scheme: dark");
+	const systemTheme = prefersDark ? "dark" : "light";
+	const currentTheme =
+		theme !== "light" && theme !== "dark" ? systemTheme : theme;
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCenter([position.coords.latitude, position.coords.longitude]);
-      },
-      (error) => {
-        console.warn(`ERROR(${error.code}): ${error.message}`);
-      },
-      options,
-    );
-  }, []);
+	useEffect(() => {
+		const options: PositionOptions = {
+			enableHighAccuracy: true,
+			timeout: 5000,
+			maximumAge: 0,
+		};
 
-  const submitDrawing = useCallback(async () => {
-    setLoading(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setCenter([position.coords.latitude, position.coords.longitude]);
+			},
+			(error) => {
+				console.warn(`ERROR(${error.code}): ${error.message}`);
+			},
+			options,
+		);
+	}, []);
 
-    if (excalidraw == null) return;
+	const submitDrawing = useCallback(async () => {
+		setLoading(true);
 
-    const elements = excalidraw.getSceneElements();
-    const state = excalidraw.getAppState();
+		if (excalidraw == null) return;
 
-    const width = state.width;
-    const height = state.height;
+		const elements = excalidraw.getSceneElements();
+		const state = excalidraw.getAppState();
 
-    const newWaypoints: L.LatLngTuple[] = [];
+		const width = state.width;
+		const height = state.height;
 
-    elements.forEach((element) => {
-      if (element.type === "freedraw") {
-        element.points.forEach((point) => {
-          const deltaX = element.x + point[0];
-          const deltaY = element.y + point[1];
-          const fractionX = deltaX / width;
-          const fractionY = deltaY / height;
+		const newWaypoints: L.LatLngTuple[] = [];
 
-          const lat = center[0] - fractionY * boxHeight;
-          const long = center[1] - fractionX * boxWidth;
+		elements.forEach((element) => {
+			if (element.type === "freedraw") {
+				element.points.forEach((point) => {
+					const deltaX = element.x + point[0];
+					const deltaY = element.y + point[1];
+					const fractionX = deltaX / width;
+					const fractionY = deltaY / height;
 
-          newWaypoints.push([lat, long]);
-        });
-      }
+					const lat = center[0] - fractionY * boxHeight;
+					const long = center[1] - fractionX * boxWidth;
 
-      if (element.type === "line") {
-        const deltaX = element.x;
-        const deltaY = element.y;
-        const fractionX = deltaX / width;
-        const fractionY = deltaY / height;
+					newWaypoints.push([lat, long]);
+				});
+			}
 
-        const lat = center[0] - fractionY * boxHeight;
-        const long = center[1] - fractionX * boxWidth;
+			if (element.type === "line") {
+				const deltaX = element.x;
+				const deltaY = element.y;
+				const fractionX = deltaX / width;
+				const fractionY = deltaY / height;
 
-        newWaypoints.push([lat, long]);
-      }
-    });
+				const lat = center[0] - fractionY * boxHeight;
+				const long = center[1] - fractionX * boxWidth;
 
-    const blob = await exportToBlob({
-      elements,
-      files: excalidraw.getFiles(),
-      getDimensions: () => {
-        return { width: 500, height: 500 };
-      },
-    });
+				newWaypoints.push([lat, long]);
+			}
+		});
 
-    const content = await coordinatize(mapBounds, blob, false);
+		const blob = await exportToBlob({
+			elements,
+			files: excalidraw.getFiles(),
+			getDimensions: () => {
+				return { width: 500, height: 500 };
+			},
+		});
 
-    const decoded = atob(content.gpxFile);
-    const decodedBlob = new Blob([decoded], {
-      type: "text/plain;charset=utf-8",
-    });
-    const filename = "encoded_data.gpx";
+		const content = await coordinatize(mapBounds, blob, isSnap);
 
-    setGpxHref(URL.createObjectURL(decodedBlob));
-    setGpxFilename(filename);
+		const decoded = atob(content.gpxFile);
+		const decodedBlob = new Blob([decoded], {
+			type: "text/plain;charset=utf-8",
+		});
+		const filename = "encoded_data.gpx";
 
-    const points: [number, number][] = content.points;
-    setWaypoints(points);
-    setLoading(false);
-  }, [excalidraw, center, mapBounds]);
+		setGpxHref(URL.createObjectURL(decodedBlob));
+		setGpxFilename(filename);
 
-  const waypointsPaired = waypoints.reduce((acc, cur, index) => {
-    acc.push([cur]);
+		const points: [number, number][] = content.points;
+		setWaypoints(points);
+		setLoading(false);
+	}, [excalidraw, center, mapBounds]);
 
-    if (index > 0) {
-      acc[index - 1]?.push(cur);
-    }
-    return acc;
-  }, [] as L.LatLngTuple[][]);
+	const waypointsPaired = waypoints.reduce((acc, cur, index) => {
+		acc.push([cur]);
 
-  const handleSelectLocation = (coordinate: L.LatLngTuple) => {
-    setCenter(coordinate);
-    map.current?.flyTo(coordinate, 18);
-  };
+		if (index > 0) {
+			acc[index - 1]?.push(cur);
+		}
+		return acc;
+	}, [] as L.LatLngTuple[][]);
 
-  return (
-    <main className="w-full grow">
-      <div className="p-4 h-dvh flex flex-col justify-center items-center gap-2">
-        <div className="w-full h-5/6">
-          <div className="w-full h-full grid grid-cols-2 gap-5">
-            <MapContainer
-              ref={map}
-              className="relative w-full h-full !z-0 rounded-box border p-5"
-              center={center}
-              bounds={initialBounds}
-              scrollWheelZoom={true}
-            >
-              <div
-                className="absolute inset-x-1 inset-y-1.5 text-center z-50"
-                style={{ zIndex: 5000 }}
-              >
-                <NominatimCombobox onSelect={handleSelectLocation} />
-              </div>
+	const handleSelectLocation = (coordinate: L.LatLngTuple) => {
+		setCenter(coordinate);
+		map.current?.flyTo(coordinate, 18);
+	};
 
-              <MapListener setCenter={setCenter} setBounds={setMapBounds} />
-              <TileLayer
-                attribution={ATTRIBUTION_MARKUP}
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+	return (
+		<main className="w-full grow">
+			<div className="p-4 h-dvh flex flex-col justify-center items-center gap-2">
+				<div className="w-full h-5/6">
+					<div className="w-full h-full grid grid-rows-2 md:grid-rows-none md:grid-cols-2 gap-5">
+						<MapContainer
+							ref={map}
+							className="relative w-full h-full !z-0 rounded-box border p-5"
+							center={center}
+							bounds={initialBounds}
+							scrollWheelZoom={true}
+						>
+							<div
+								className="absolute inset-x-1 inset-y-1.5 text-center z-50"
+								style={{ zIndex: 5000 }}
+							>
+								<NominatimCombobox onSelect={handleSelectLocation} />
+							</div>
 
-              <Marker position={center!} />
+							<MapListener setCenter={setCenter} setBounds={setMapBounds} />
+							<TileLayer
+								attribution={ATTRIBUTION_MARKUP}
+								url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+							/>
 
-              {waypointsPaired.length &&
-                waypointsPaired.map((waypoint) => {
-                  return (
-                    <Polyline
-                      pathOptions={{ color: "red" }}
-                      positions={waypoint}
-                    />
-                  );
-                })}
+							<Marker position={center!} />
 
-              {/* waypoints.length && <Routes latLngTuples={waypoints} /> */}
-            </MapContainer>
+							{waypointsPaired.length &&
+								waypointsPaired.map((waypoint) => {
+									return (
+										<Polyline
+											pathOptions={{ color: "red" }}
+											positions={waypoint}
+										/>
+									);
+								})}
 
-            <div className="flex flex-col rounded-box justify-end gap-2 p-5 border">
-              <Excalidraw
-                excalidrawAPI={setExcalidraw}
-                theme={currentTheme === "light" ? THEME.LIGHT : THEME.DARK}
-              />
-              <div className="flex flex-row w-full gap-2">
-                <button
-                  onClick={submitDrawing}
-                  className="btn btn-primary gap-0"
-                >
-                  <span className={cn(loading && "loading me-2")}></span>
-                  <span>Submit</span>
-                </button>
+							{/* waypoints.length && <Routes latLngTuples={waypoints} /> */}
+						</MapContainer>
 
-                <button
-                  className={"btn btn-primary btn-outline"}
-                  onClick={() => {}}
-                  disabled={gpxHref === ""}
-                >
-                  <a href={gpxHref} download={gpxFilename}>
-                    Download .gpx
-                  </a>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+						<div className="flex flex-col rounded-box justify-end gap-2 p-5 border">
+							<Excalidraw
+								excalidrawAPI={setExcalidraw}
+								theme={currentTheme === "light" ? THEME.LIGHT : THEME.DARK}
+							/>
+							<div className="flex flex-row w-full gap-2">
+								<button
+									onClick={submitDrawing}
+									className="btn btn-primary gap-0"
+								>
+									<span className={cn(loading && "loading me-2")}></span>
+									<span>Submit</span>
+								</button>
+
+								<button
+									className={"btn btn-primary btn-outline"}
+									onClick={() => { }}
+									disabled={gpxHref === ""}
+								>
+									<a href={gpxHref} download={gpxFilename}>
+										Download .gpx
+									</a>
+								</button>
+
+								<div className="w-full ms-auto">
+									<div className="form-control justify-center items-end h-full">
+										<label className="label cursor-pointer gap-2">
+											<span className="label-text">Use Snap</span>
+											<input
+												type="checkbox"
+												className="toggle toggle-success"
+												checked={isSnap}
+												onClick={() => setIsSnap(!isSnap)}
+											/>
+										</label>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	);
 }
 
 export default App;
