@@ -193,7 +193,7 @@ function App() {
 								<div className="w-full ms-auto">
 									<div className="form-control justify-center items-end h-full">
 										<label className="label cursor-pointer gap-2">
-											<span className="label-text">Use Snap</span>
+											<span className="label-text">Snap drawing to roads</span>
 											<input
 												type="checkbox"
 												className="toggle toggle-success"
