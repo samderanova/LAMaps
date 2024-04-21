@@ -16,7 +16,6 @@ import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Polyline, Marker, TileLayer } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
-import { Routes } from "./Map";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -43,6 +42,18 @@ const boxWidth = -117.846837 - -117.837999;
 
 const boxHeight = 33.648 - 33.6432;
 
+const a = 33.6459 - 33.6695;
+
+const b = -117.842717 - -117.8604;
+
+const midLat = 0.02360000000000184;
+
+const midLon = 0.017500000000000000;
+
+const lat = 33.6459;
+
+const lon = -117.842717;
+
 function App() {
   const map = useRef<L.Map | null>(null);
 
@@ -50,7 +61,7 @@ function App() {
 
   const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
 
-  const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
+  const [center, setCenter] = useState<L.LatLngTuple>([lat, lon]);
 
   const [loading, setLoading] = useState(false);
 
@@ -184,22 +195,35 @@ function App() {
           <ResizablePanelGroup
             direction={isLarge ? "horizontal" : "vertical"}
             id="demo"
-            className="w-full h-full rounded-box border"
+            className="w-full h-full border"
           >
             <ResizablePanel className="relative">
               <MapContainer
                 ref={map}
                 className="w-full h-full !z-0"
                 center={center}
-                zoom={16}
+                zoom={14}
                 scrollWheelZoom={true}
+                zoomControl={false}
               >
                 <TileLayer
                   attribution={ATTRIBUTION_MARKUP}
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                <Marker position={center!} />
+                <Marker position={center} />
+
+                {/* Top right */}
+                <Marker position={[lat + midLat, lon + midLon]} />
+
+                {/* Top left */}
+                <Marker position={[lat + midLat, lon - midLon]} />
+
+                {/* bottom right */}
+                <Marker position={[lat - midLat, lon + midLon]} />
+
+                {/* bottom left */}
+                <Marker position={[lat - midLat, lon - midLon]} />
 
                 {waypoints.map((waypoint, index) => {
                   return <Marker key={index} position={waypoint} />;
