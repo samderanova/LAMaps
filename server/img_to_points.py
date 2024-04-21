@@ -232,7 +232,7 @@ def points_from_img(img: cv.Mat, max_points: int = 50) -> list[tuple[int, int]]:
         rand_color = np.random.randint(0, 255, 3).tolist()
         for i in range(len(section)-1):
             cv.line(canvas, section[i], section[i+1], rand_color, 1)
-    cv.imwrite("debug/0_sections.png", canvas)
+    cv.imwrite("debug/2_sections.png", canvas)
 
     reduced_sections = reduce_sections(sections, max_points)
 
@@ -242,15 +242,20 @@ def points_from_img(img: cv.Mat, max_points: int = 50) -> list[tuple[int, int]]:
     canvas2 = np.zeros_like(img[:,:,:3])
     for component in components:
         rand_color = np.random.randint(0, 255, 3).tolist()
-        for i in range(len(component)-1):
-            cv.line(canvas2, vertices[component[i]], vertices[component[i+1]], rand_color, 1)
-    cv.imwrite("debug/1_components.png", canvas2)
+        for p in component:
+            cv.circle(canvas2, vertices[p], 2, rand_color, -1)
+    cv.imwrite("debug/3_components.png", canvas2)
 
     combined_adjacency = combine_components(components, vertices, adjacencies)
 
     edge_list = create_weighted_edgelist(vertices, combined_adjacency)
 
     vertex_order = chinese_postman_problem(edge_list) 
+
+    canvas3 = np.zeros_like(img[:,:,:3])
+    for v1, v2 in pairwise(vertex_order):
+        cv.line(canvas3, vertices[v1], vertices[v2], (255, 255, 255), 1)
+    cv.imwrite("debug/4_chinese_postman.png", canvas3)
     
     return [
         vertices[i] for i in vertex_order

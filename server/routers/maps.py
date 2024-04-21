@@ -59,11 +59,6 @@ async def get_coords_from_image() -> list[Coordinate]:
 async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], max_points: Annotated[str, Form(...)]=50, image: UploadFile = File(optional=True)):
     cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
     points = points_from_img(cv_img, int(max_points))
-    print(points)
-    canvas = np.zeros_like(cv_img[:,:,:3])
-    for p1, p2 in pairwise(points):
-        cv.line(canvas, p1, p2, (255, 255, 255), 1)
-    cv.imwrite("debug.png", canvas)
     starting_pt = (float(latitude), float(longitude))
     gps_coords = coordinate(points, starting_pt)
     gpx_file = make_gpx(gps_coords)
