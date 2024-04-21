@@ -4,3 +4,4 @@ pygame
 osmnx
 googlemaps
 python-dotenv
+opencv-python==4.7.0.72
