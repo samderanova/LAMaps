@@ -14,7 +14,17 @@ def skeletonize(img: cv.Mat) -> cv.Mat:
     Skeletonizes an rgb image
     """
     img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    # convert to binary
+    _, img = cv.threshold(img, 127, 255, cv.THRESH_BINARY)
+
+    # make background black and foreground white
+    count_hi = np.sum(img>0)
+    if count_hi > 0.5 * img.size:
+        img = cv.bitwise_not(img)
+    
+    
     img = cv.ximgproc.thinning(img)
+    cv.imwrite("after_skeletonize.png", img)
     return img
 
 
@@ -95,6 +105,13 @@ def sectionize(img: cv.Mat):
                 if (nx, ny) in section_set and (nx, ny) not in section_visited:
                     exploration.append((nx, ny))
         reordered_sections.append(new_section)
+
+    canvas = np.zeros_like(img[:,:,:3])
+    for section in reordered_sections:
+        rand_color = np.random.randint(0, 255, 3).tolist()
+        for i in range(len(section)-1):
+            cv.line(canvas, section[i], section[i+1], rand_color, 1)
+    cv.imwrite("sections.png", canvas)
 
     return reordered_sections
 
@@ -225,7 +242,7 @@ def points_from_img(img: cv.Mat, max_points: int = 50) -> list[tuple[int, int]]:
     ]
 
 if __name__ == "__main__":
-    img = cv.imread(f"{CURRENT_FILEPATH}/car.png")
+    img = cv.imread(f"{CURRENT_FILEPATH}/inverted_circle.png")
     canvas = np.zeros_like(img)
 
     for v1, v2 in pairwise(points_from_img(img)):

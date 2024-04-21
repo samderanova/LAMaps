@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 *.env
+
+after_skeletonize.png
+sections.png
+debug_original.png
+debug.png
