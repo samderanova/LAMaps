@@ -66,12 +66,11 @@ export function NominatimCombobox(props?: NominatimComboboxProps) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild className="bg-black">
         <Button
-          variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between truncate"
+          className="sm:w-[100px] md:w-[300px] lg:w-[400px] justify-between truncate"
         >
           {value
             ? options.find((option) => `${option.lat}:${option.lon}` === value)
@@ -81,19 +80,19 @@ export function NominatimCombobox(props?: NominatimComboboxProps) {
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="sm:w-[100px] md:w-[300px] lg:w-[400px] p-0 bg-black">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search framework..."
+            placeholder="Search location..."
             onInput={debouncedHandleInput}
           />
 
-          <CommandEmpty>No framework found.</CommandEmpty>
+          <CommandEmpty>No location found.</CommandEmpty>
 
           <CommandGroup>
             {options.map((option) => (
               <CommandItem
-                className="truncate line-clamp-1"
+                className="truncate line-clamp-1 !overflow-x-scroll"
                 key={option.osm_id}
                 value={`${option.lat}:${option.lon}`}
                 onSelect={(currentValue) => {
