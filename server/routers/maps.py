@@ -58,8 +58,8 @@ async def get_coords_from_image() -> list[Coordinate]:
 @router.post("/coordinatize")
 async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], bounds: Annotated[str, Form(...)], max_points: Annotated[str, Form(...)]=50, image: UploadFile = File(optional=True)):
     bounds_dict = json.loads(bounds)
-    max_lon = bounds_dict["_southWest"]["lon"]
-    min_lon = bounds_dict["_northEast"]["lon"]
+    max_lng = bounds_dict["_southWest"]["lng"]
+    min_lng = bounds_dict["_northEast"]["lng"]
     max_lat = bounds_dict["_northEast"]["lat"]
     min_lat = bounds_dict["_southWest"]["lat"]
     cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
