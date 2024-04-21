@@ -87,40 +87,6 @@ function App() {
 		if (excalidraw == null) return;
 
 		const elements = excalidraw.getSceneElements();
-		const state = excalidraw.getAppState();
-
-		const width = state.width;
-		const height = state.height;
-
-		const newWaypoints: L.LatLngTuple[] = [];
-
-		elements.forEach((element) => {
-			if (element.type === "freedraw") {
-				element.points.forEach((point) => {
-					const deltaX = element.x + point[0];
-					const deltaY = element.y + point[1];
-					const fractionX = deltaX / width;
-					const fractionY = deltaY / height;
-
-					const lat = center[0] - fractionY * boxHeight;
-					const long = center[1] - fractionX * boxWidth;
-
-					newWaypoints.push([lat, long]);
-				});
-			}
-
-			if (element.type === "line") {
-				const deltaX = element.x;
-				const deltaY = element.y;
-				const fractionX = deltaX / width;
-				const fractionY = deltaY / height;
-
-				const lat = center[0] - fractionY * boxHeight;
-				const long = center[1] - fractionX * boxWidth;
-
-				newWaypoints.push([lat, long]);
-			}
-		});
 
 		const blob = await exportToBlob({
 			elements,
@@ -144,7 +110,7 @@ function App() {
 		const points: [number, number][] = content.points;
 		setWaypoints(points);
 		setLoading(false);
-	}, [excalidraw, center, mapBounds]);
+	}, [excalidraw, mapBounds]);
 
 	const waypointsPaired = waypoints.reduce((acc, cur, index) => {
 		acc.push([cur]);
@@ -185,7 +151,7 @@ function App() {
 								url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 							/>
 
-							<Marker position={center!} />
+							{/* <Marker position={center!} /> */}
 
 							{waypointsPaired.length &&
 								waypointsPaired.map((waypoint) => {
