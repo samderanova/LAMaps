@@ -41,19 +41,17 @@ const boxHeight = 33.648 - 33.6432;
 function App() {
   const map = useRef<L.Map | null>(null);
 
-  const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
-  const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
-  const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
-  const initialBounds = L.latLngBounds(
-    L.latLng(center[0] - 0.003, center[1] - 0.003),
-    L.latLng(center[0] + 0.003, center[1] + 0.003),
-  );
-  const [loading, setLoading] = useState(false);
-  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(
-    initialBounds,
-  );
-  const [gpxHref, setGpxHref] = useState<string>("");
-  const [gpxFilename, setGpxFilename] = useState<string>("");
+	const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
+	const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
+	const [center, setCenter] = useState<L.LatLngTuple>([34.06886, -118.435036]);
+	const initialBounds = L.latLngBounds(
+		L.latLng(center[0]- 0.003, center[1] - 0.003),
+		L.latLng(center[0] + 0.003, center[1] + 0.003)
+	);
+	const [loading, setLoading] = useState(false);
+	const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(initialBounds);
+	const [gpxHref, setGpxHref] = useState<string>("");
+	const [gpxFilename, setGpxFilename] = useState<string>("");
 
   const { theme } = useTheme();
   const prefersDark = useMediaQuery("prefers-color-scheme: dark");
