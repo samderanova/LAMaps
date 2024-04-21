@@ -36,7 +36,7 @@ def get_loss_matrix(matrix):
     lons = matrix[:, 1].tolist()
 
     node_ids = ox.distance.nearest_nodes(G, lats, lons)
-    nodes = G.nodes()
+    nodes = G.nodes
 
     loss_matrix = []
     for i, node_id in enumerate(node_ids):
@@ -81,5 +81,5 @@ def get_distance_miles(lat, lon):
     )
     nodes = G.nodes()
     node = nodes[node_id]
-    closest_lat, closest_lon = node["y"], node["x"]
+    closest_lat, closest_lon = node["lat"], node["lon"]
     return (lat - closest_lat) * 69, (lon - closest_lon) * 54.6
