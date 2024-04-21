@@ -63,7 +63,6 @@ async def img_to_points(
     )
     points = points_from_img(cv_img, int(max_points))
     gps_coords = scale_and_place(points, [north, east], [south, west], cv_img.shape[0], cv_img.shape[1])
-    print(gps_coords)
     gpx_file = make_gpx(gps_coords)
 
     return {"points": gps_coords, "gpxFile": b64encode(gpx_file)}
