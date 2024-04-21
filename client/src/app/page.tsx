@@ -170,6 +170,7 @@ function App() {
             center={center}
             bounds={initialBounds}
             scrollWheelZoom={true}
+            zoomControl={false}
           >
             <div
               className="absolute inset-x-1 inset-y-1.5 text-center z-50"
