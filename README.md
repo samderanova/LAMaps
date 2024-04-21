@@ -7,3 +7,5 @@ map. You can then download a file containing this route and use it in your
 own maps applications.
 
 This web application was built with Next.js and FastAPI.
+
+![](demo.png)
