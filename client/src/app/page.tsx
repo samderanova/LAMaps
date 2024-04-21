@@ -49,10 +49,15 @@ function App() {
 	const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
 	const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
 	const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
+  const initialBounds = L.latLngBounds(
+    L.latLng(center[0]- 0.003, center[1] - 0.003),
+    L.latLng(center[0] + 0.003, center[1] + 0.003)
+  );
 	const [loading, setLoading] = useState(false);
-	const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+	const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(initialBounds);
 	const [gpxHref, setGpxHref] = useState<string>("");
 	const [gpxFilename, setGpxFilename] = useState<string>("");
+
 
 	const isLarge = useMediaQuery("(min-width: 768px)");
 
@@ -173,7 +178,7 @@ function App() {
 								ref={map}
 								className="relative w-full h-full !z-0"
 								center={center}
-								zoom={16}
+								bounds={initialBounds}
 								scrollWheelZoom={true}
 							>
 								<div
