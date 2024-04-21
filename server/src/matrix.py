@@ -4,9 +4,7 @@ from functools import cache
 import numpy as np
 import osmnx as ox
 
-# Each scaling factor is 1 quarter mile to degree.
-LAT_SCALING_FACTOR = 0.014492753623188406
-LON_SCALING_FACTOR = 0.018315018315018316
+# Miles per 1 degree.
 
 LA_MAP_PATH = os.getenv("LA_MAP_PATH")
 if LA_MAP_PATH is None:
@@ -18,13 +16,27 @@ def get_map():
     return ox.load_graphml(LA_MAP_PATH)
 
 
-def scale_and_place(coordinates: list[list[int]], starting_point: tuple[float, float]):
-    matrix = np.array(coordinates, dtype=np.float64)
-    start_array = np.array(starting_point)
+def scale_and_place(
+    coordinates: list[list[int]],
+    ne: list[float, float],
+    sw: list[float, float],
+    y_max_pixels: int = 400,
+    x_max_pixels: int = 400,
+):
+    north = ne[0]
+    south = sw[0]
+    east = ne[1]
+    west = sw[1]
 
-    matrix[:, 0] = matrix[:, 0] * LAT_SCALING_FACTOR
-    matrix[:, 1] = matrix[:, 1] * LON_SCALING_FACTOR
-    matrix = matrix + start_array
+    matrix = np.array(coordinates, dtype=np.float64)
+    origin = np.array(south, west)
+
+    lat_multiplier = (north - south) / y_max_pixels
+    lon_multiplier = (east - west) / x_max_pixels
+
+    matrix[:, 0] = matrix[:, 0] * lat_multiplier
+    matrix[:, 1] = matrix[:, 1] * lon_multiplier
+    matrix = matrix + origin
 
     return matrix
 

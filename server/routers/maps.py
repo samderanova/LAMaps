@@ -1,29 +1,20 @@
-from fastapi import APIRouter, status, Form, UploadFile, File
-from typing import Annotated
-from pydantic import BaseModel
-
-from src.matrix import fit_to_map, get_distance_miles, scale_and_place
-from make_gpx import make_gpx, b64encode
-from img_to_points import points_from_img
 import json
+from typing import Annotated
+
 import cv2 as cv
 import numpy as np
+from fastapi import APIRouter, File, Form, UploadFile, status
+from img_to_points import points_from_img
+from make_gpx import b64encode, make_gpx
+from pydantic import BaseModel
+from src.matrix import fit_to_map, get_distance_miles, scale_and_place
 
 router = APIRouter()
-
-# Quarter Mile
-SCALING_FACTOR = 0.0036231884
 
 
 class Coordinate(BaseModel):
     latitude: float
     longitude: float
-
-
-def coordinate(
-    coordinates: list[list[float]], starting_point: tuple[float, float]
-):
-    return scale_and_place(coordinates, starting_point).tolist()
 
 
 @router.post("/fit", status_code=status.HTTP_201_CREATED)
@@ -55,20 +46,23 @@ async def get_coords_from_image() -> list[Coordinate]:
     ]
     return [Coordinate.model_validate(p) for p in points]
 
+
 @router.post("/coordinatize")
-async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], bounds: Annotated[str, Form(...)], max_points: Annotated[str, Form(...)]=50, image: UploadFile = File(optional=True)):
+async def img_to_points(
+    bounds: Annotated[str, Form(...)],
+    max_points: Annotated[str, Form(...)] = 50,
+    image: UploadFile = File(optional=True),
+):
     bounds_dict = json.loads(bounds)
-    max_lng = bounds_dict["_southWest"]["lng"]
-    min_lng = bounds_dict["_northEast"]["lng"]
-    max_lat = bounds_dict["_northEast"]["lat"]
-    min_lat = bounds_dict["_southWest"]["lat"]
-    cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
+    north = bounds_dict["_northEast"]["lat"]
+    south = bounds_dict["_southWest"]["lat"]
+    east = bounds_dict["_northEast"]["lng"]
+    west = bounds_dict["_southWest"]["lng"]
+    cv_img = cv.imdecode(
+        np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED
+    )
     points = points_from_img(cv_img, int(max_points))
-    starting_pt = (float(latitude), float(longitude))
-    gps_coords = coordinate(points, starting_pt)
+    gps_coords = scale_and_place(points, north, south, east, west)
     gpx_file = make_gpx(gps_coords)
 
-    return {
-        "points": gps_coords,
-        "gpxFile": b64encode(gpx_file)
-    }
+    return {"points": gps_coords, "gpxFile": b64encode(gpx_file)}
