@@ -52,6 +52,7 @@ async def img_to_points(
     bounds: Annotated[str, Form(...)],
     max_points: Annotated[str, Form(...)] = 50,
     image: UploadFile = File(optional=True),
+    snap: Annotated[str, Form(...)] = 'false',
 ):
     bounds_dict = json.loads(bounds)
     north = bounds_dict["_northEast"]["lat"]
@@ -63,6 +64,11 @@ async def img_to_points(
     )
     points = points_from_img(cv_img, int(max_points))
     gps_coords = scale_and_place(points, [north, east], [south, west], cv_img.shape[0], cv_img.shape[1])
+
+    if snap == "true":
+        gps_coords_ndarray, _ = fit_to_map(gps_coords)
+        gps_coords = gps_coords_ndarray.tolist()
+
     gpx_file = make_gpx(gps_coords)
 
     return {"points": gps_coords, "gpxFile": b64encode(gpx_file)}

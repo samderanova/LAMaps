@@ -134,7 +134,7 @@ function App() {
 			},
 		});
 
-		const content = await coordinatize(center, mapBounds, blob);
+		const content = await coordinatize(mapBounds, blob, false);
 
 		const decoded = atob(content.gpxFile);
 		const decodedBlob = new Blob([decoded], {

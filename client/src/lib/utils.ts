@@ -22,13 +22,12 @@ export function saveFile(b64FileContents: string) {
 }
 
 export async function coordinatize(
-	center: L.LatLngTuple,
 	mapBounds: L.LatLngBounds | null,
 	blob: Blob,
+	snap: boolean
 ) {
 	const formData = new FormData();
-	formData.set("latitude", center[0].toString());
-	formData.set("longitude", center[1].toString());
+	formData.set("snap", snap ? "true" : "false")
 	formData.set("bounds", JSON.stringify(mapBounds));
 	formData.set("image", blob);
 	formData.set("max_points", "20");
