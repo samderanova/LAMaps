@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from src.matrix import fit_to_map, get_distance_miles, scale_and_place
 from make_gpx import make_gpx, b64encode
 from img_to_points import points_from_img
-from itertools import pairwise
+import json
 import cv2 as cv
 import numpy as np
 
@@ -56,7 +56,9 @@ async def get_coords_from_image() -> list[Coordinate]:
     return [Coordinate.model_validate(p) for p in points]
 
 @router.post("/coordinatize")
-async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], max_points: Annotated[str, Form(...)]=50, image: UploadFile = File(optional=True)):
+async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], bounds: Annotated[str, Form(...)], max_points: Annotated[str, Form(...)]=50, image: UploadFile = File(optional=True)):
+    bounds_dict = json.loads(bounds)
+    print(bounds_dict)
     cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
     points = points_from_img(cv_img, int(max_points))
     starting_pt = (float(latitude), float(longitude))

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Polyline, Marker, TileLayer, useMapEvent } from "react-leaflet";
+import { Polyline, Marker, TileLayer, useMapEvent, useMapEvents } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
 import { NominatimCombobox } from "@/components/nominatim-combobox";
 
@@ -28,11 +28,26 @@ const Excalidraw = dynamic(
   },
 );
 
-function MapClickListener(props) {
-  const map = useMapEvent('click', (e) => {
-    const lng = e.latlng.lng
-    const lat = e.latlng.lat
-    props.setCenter([lat, lng])
+function MapListener(props) {
+  const updateBounds = (map) => {
+    const bounds = map.getBounds();
+    props.setBounds(bounds);
+  }
+  const map = useMapEvents({
+    click: (e) => {
+      const lng = e.latlng.lng
+      const lat = e.latlng.lat
+      props.setCenter([lat, lng])
+    },
+    dragend: (e) => {
+      updateBounds(map);
+    },
+    zoom: (e) => {
+      updateBounds(map);
+    },
+    load: (e) => {
+      updateBounds(map);
+    }
   })
   return null
 }
@@ -63,6 +78,8 @@ function App() {
   const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
   
   const [loading, setLoading] = useState(false);
+
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   
   const isLarge = useMediaQuery("(min-width: 768px)");
   
@@ -144,8 +161,9 @@ function App() {
     });
 
     const formData = new FormData();
-    formData.set("latitude", "33.6459");
-    formData.set("longitude", "-117.842717");
+    formData.set("latitude", center[0].toString());
+    formData.set("longitude", center[1].toString());
+    formData.set("bounds", JSON.stringify(mapBounds));
     formData.set("image", blob);
     formData.set("max_points", "20");
 
@@ -217,7 +235,6 @@ function App() {
                 zoom={16}
                 scrollWheelZoom={true}
               >
-                <MapClickListener setCenter={(latlng)=>setCenter(latlng)}/>
                 <div
                   className="absolute top-0 left-0 z-50"
                   style={{ zIndex: 5000 }}
@@ -225,6 +242,7 @@ function App() {
                   <NominatimCombobox onSelect={handleSelectLocation} />
                 </div>
 
+                <MapListener setCenter={setCenter} setBounds={setMapBounds}/>
                 <TileLayer
                   attribution={ATTRIBUTION_MARKUP}
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
