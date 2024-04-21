@@ -110,7 +110,7 @@ function App() {
 		const points: [number, number][] = content.points;
 		setWaypoints(points);
 		setLoading(false);
-	}, [excalidraw, mapBounds]);
+	}, [excalidraw, mapBounds, isSnap]);
 
 	const waypointsPaired = waypoints.reduce((acc, cur, index) => {
 		acc.push([cur]);
