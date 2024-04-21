@@ -24,13 +24,10 @@ def skeletonize(img: cv.Mat) -> cv.Mat:
     
     
     img = cv.ximgproc.thinning(img)
-    cv.imwrite("after_skeletonize.png", img)
     return img
 
 
-def sectionize(img: cv.Mat):
-    skeleton = skeletonize(img)
-
+def sectionize(skeleton: cv.Mat):
     sections = defaultdict(list)
     last_section_index = 0
     visited = set()
@@ -106,12 +103,7 @@ def sectionize(img: cv.Mat):
                     exploration.append((nx, ny))
         reordered_sections.append(new_section)
 
-    canvas = np.zeros_like(img[:,:,:3])
-    for section in reordered_sections:
-        rand_color = np.random.randint(0, 255, 3).tolist()
-        for i in range(len(section)-1):
-            cv.line(canvas, section[i], section[i+1], rand_color, 1)
-    cv.imwrite("sections.png", canvas)
+    
 
     return reordered_sections
 
@@ -152,12 +144,10 @@ def reduce_sections(sections: list[list[tuple[int, int]]], points_limit: int) ->
     return linearized_sections
     
 
-def make_graph(img: cv.Mat, points_limit: int = 50) -> tuple[list[tuple[int, int]], dict[int, list[int]]]:
+def make_graph(reduced_sections: list[list[tuple[int,int]]], points_limit: int = 50) -> tuple[list[tuple[int, int]], dict[int, list[int]]]:
     """
     Returns a list of points from an rgb image
     """
-    sections = sectionize(img)
-    reduced_sections = reduce_sections(sections, points_limit)
 
     vertices = []
     adjacencies = defaultdict(list)
@@ -231,10 +221,35 @@ def create_weighted_edgelist(vertices: list[tuple[int, int]], adjacencies: dict[
     return [(i, j, w) for (i, j), w in edges_dict.items()]
 
 def points_from_img(img: cv.Mat, max_points: int = 50) -> list[tuple[int, int]]:
-    vertices, adjacencies = make_graph(img, max_points)
+    os.makedirs("debug", exist_ok=True)
+    cv.imwrite("debug/0_original.png", img)
+    skeleton = skeletonize(img)
+    cv.imwrite("debug/1_skeleton.png", skeleton)
+
+    sections = sectionize(skeleton)
+    canvas = np.zeros_like(img[:,:,:3])
+    for section in sections:
+        rand_color = np.random.randint(0, 255, 3).tolist()
+        for i in range(len(section)-1):
+            cv.line(canvas, section[i], section[i+1], rand_color, 1)
+    cv.imwrite("debug/0_sections.png", canvas)
+
+    reduced_sections = reduce_sections(sections, max_points)
+
+    vertices, adjacencies = make_graph(reduced_sections, max_points)
+
     components = connected_components(vertices, adjacencies)
+    canvas2 = np.zeros_like(img[:,:,:3])
+    for component in components:
+        rand_color = np.random.randint(0, 255, 3).tolist()
+        for i in range(len(component)-1):
+            cv.line(canvas2, vertices[component[i]], vertices[component[i+1]], rand_color, 1)
+    cv.imwrite("debug/1_components.png", canvas2)
+
     combined_adjacency = combine_components(components, vertices, adjacencies)
+
     edge_list = create_weighted_edgelist(vertices, combined_adjacency)
+
     vertex_order = chinese_postman_problem(edge_list) 
     
     return [
