@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Polyline, Marker, TileLayer } from "react-leaflet";
+import { Polyline, Marker, TileLayer, useMapEvent } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
 
 const ATTRIBUTION_MARKUP =
@@ -26,6 +26,15 @@ const Excalidraw = dynamic(
     ssr: false,
   },
 );
+
+function MapClickListener(props) {
+  const map = useMapEvent('click', (e) => {
+    const lng = e.latlng.lng
+    const lat = e.latlng.lat
+    props.setCenter([lat, lng])
+  })
+  return null
+}
 
 const MapContainer = dynamic(
   async () => {
@@ -42,27 +51,29 @@ const boxWidth = -117.846837 - -117.837999;
 
 const boxHeight = 33.648 - 33.6432;
 
+
 function App() {
   const map = useRef<L.Map | null>(null);
-
+  
   const [excalidraw, setExcalidraw] = useState<ExcalidrawImperativeAPI>();
-
+  
   const [waypoints, setWaypoints] = useState(new Array<L.LatLngTuple>());
-
+  
   const [center, setCenter] = useState<L.LatLngTuple>([33.6459, -117.842717]);
-
+  
   const [loading, setLoading] = useState(false);
-
+  
   const isLarge = useMediaQuery("(min-width: 768px)");
-
+  
   const { theme } = useTheme();
-
+  
   const prefersDark = useMediaQuery("prefers-color-scheme: dark");
-
+  
   const systemTheme = prefersDark ? "dark" : "light";
-
+  
   const currentTheme =
-    theme !== "light" && theme !== "dark" ? systemTheme : theme;
+  theme !== "light" && theme !== "dark" ? systemTheme : theme;
+  
 
   useEffect(() => {
     const options: PositionOptions = {
@@ -213,6 +224,7 @@ function App() {
                 zoom={16}
                 scrollWheelZoom={true}
               >
+                <MapClickListener setCenter={(latlng)=>setCenter(latlng)}/>
                 <TileLayer
                   attribution={ATTRIBUTION_MARKUP}
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
