@@ -9,7 +9,7 @@ export function MapFlyer(props: MapFlyerProps) {
   const map = useMap();
 
   useEffect(() => {
-    map.flyTo(props.coordinates);
+    map.flyTo(props.coordinates, 14, { animate: false });
   });
 
   return null;
