@@ -3,6 +3,7 @@ from typing import Annotated
 from pydantic import BaseModel
 
 from src.matrix import fit_to_map, get_distance_miles, scale_and_place
+from make_gpx import make_gpx, b64encode
 from img_to_points import points_from_img
 from itertools import pairwise
 import cv2 as cv
@@ -66,7 +67,9 @@ async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotate
     cv.imwrite("debug.png", canvas)
     starting_pt = (float(latitude), float(longitude))
     gps_coords = coordinate(points, starting_pt)
+    gpx_file = make_gpx(gps_coords)
 
     return {
-        "points": gps_coords
+        "points": gps_coords,
+        "gpxFile": b64encode(gpx_file)
     }
