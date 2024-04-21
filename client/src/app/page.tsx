@@ -135,7 +135,7 @@ function App() {
 		saveFile(fileEncoded);
 		setWaypoints(points);
 		setLoading(false);
-	}, [excalidraw, center]);
+	}, [excalidraw, center, mapBounds]);
 
 	const waypointsPaired = waypoints.reduce((acc, cur, index) => {
 		acc.push([cur]);
