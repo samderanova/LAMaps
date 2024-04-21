@@ -1,11 +1,12 @@
-from fastapi import APIRouter, status, Form, UploadFile, File
 from typing import Annotated
-from pydantic import BaseModel
 
-from src.matrix import fit_to_map, get_distance_miles, scale_and_place
-from img_to_points import points_from_img
 import cv2 as cv
 import numpy as np
+from fastapi import APIRouter, File, Form, UploadFile, status
+from pydantic import BaseModel
+
+from img_to_points import points_from_img
+from src.matrix import fit_to_map, get_distance_miles, scale_and_place
 
 router = APIRouter()
 
@@ -18,9 +19,7 @@ class Coordinate(BaseModel):
     longitude: float
 
 
-def coordinate(
-    coordinates: list[list[float]], starting_point: tuple[float, float]
-):
+def coordinate(coordinates: list[list[float]], starting_point: tuple[float, float]):
     return scale_and_place(coordinates, starting_point).tolist()
 
 
@@ -53,13 +52,19 @@ async def get_coords_from_image() -> list[Coordinate]:
     ]
     return [Coordinate.model_validate(p) for p in points]
 
+
 @router.post("/coordinatize")
-async def img_to_points(latitude: Annotated[str, Form(...)], longitude: Annotated[str, Form(...)], max_points: Annotated[str, Form(...)]=50, image: UploadFile = File(optional=True)):
-    cv_img = cv.imdecode(np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED)
+async def img_to_points(
+    latitude: Annotated[str, Form(...)],
+    longitude: Annotated[str, Form(...)],
+    max_points: Annotated[str, Form(...)] = 50,
+    image: UploadFile = File(optional=True),
+):
+    cv_img = cv.imdecode(
+        np.fromstring(image.file.read(), np.uint8), cv.IMREAD_UNCHANGED
+    )
     points = points_from_img(cv_img, int(max_points))
     starting_pt = (float(latitude), float(longitude))
     gps_coords = coordinate(points, starting_pt)
 
-    return {
-        "points": gps_coords
-    }
+    return {"points": gps_coords}
