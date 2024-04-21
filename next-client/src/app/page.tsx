@@ -42,13 +42,9 @@ const boxWidth = -117.846837 - -117.837999;
 
 const boxHeight = 33.648 - 33.6432;
 
-const a = 33.6459 - 33.6695;
-
-const b = -117.842717 - -117.8604;
-
 const midLat = 0.02360000000000184;
 
-const midLon = 0.017500000000000000;
+const midLon = 0.0175;
 
 const lat = 33.6459;
 
@@ -64,8 +60,6 @@ function App() {
   const [center, setCenter] = useState<L.LatLngTuple>([lat, lon]);
 
   const [loading, setLoading] = useState(false);
-
-  const isLarge = useMediaQuery("(min-width: 768px)");
 
   const { theme } = useTheme();
 
@@ -144,10 +138,20 @@ function App() {
     });
 
     const formData = new FormData();
+
+    const topLeft = [center[0] + midLat, center[1] - midLon];
+    const topRight = [center[0] + midLat, center[1] + midLon];
+    const botLeft = [center[0] - midLat, center[1] + midLon];
+    const botRight = [center[0] - midLat, center[1] - midLon];
+
     formData.set("latitude", "33.6459");
     formData.set("longitude", "-117.842717");
     formData.set("image", blob);
     formData.set("max_points", "20");
+    formData.set("topLeft", JSON.stringify(topLeft));
+    formData.set("topRight", JSON.stringify(topRight));
+    formData.set("botLeft", JSON.stringify(botLeft));
+    formData.set("botRight", JSON.stringify(botRight));
 
     const res = await fetch("/api/maps/coordinatize", {
       method: "POST",
@@ -190,73 +194,67 @@ function App() {
         </div>
       </div>
 
-      <div className="h-dvh flex items-center">
-        <div className="w-full h-5/6 p-8">
-          <ResizablePanelGroup
-            direction={isLarge ? "horizontal" : "vertical"}
-            id="demo"
-            className="w-full h-full border"
+      <div className="h-dvh flex flex-col justify-center items-center gap-2">
+        <div className="relative w-full h-full p-8">
+          <MapContainer
+            ref={map}
+            className="absolute top-0 left-0 w-full h-full !z-0"
+            center={center}
+            zoom={14}
+            scrollWheelZoom={true}
+            zoomControl={false}
           >
-            <ResizablePanel className="relative">
-              <MapContainer
-                ref={map}
-                className="w-full h-full !z-0"
-                center={center}
-                zoom={14}
-                scrollWheelZoom={true}
-                zoomControl={false}
-              >
-                <TileLayer
-                  attribution={ATTRIBUTION_MARKUP}
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+            <TileLayer
+              attribution={ATTRIBUTION_MARKUP}
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-                <Marker position={center} />
+            <Marker position={center} />
 
-                {/* Top right */}
-                <Marker position={[lat + midLat, lon + midLon]} />
+            {/* Top right */}
+            <Marker position={[lat + midLat, lon + midLon]} />
 
-                {/* Top left */}
-                <Marker position={[lat + midLat, lon - midLon]} />
+            {/* Top left */}
+            <Marker position={[lat + midLat, lon - midLon]} />
 
-                {/* bottom right */}
-                <Marker position={[lat - midLat, lon + midLon]} />
+            {/* bottom right */}
+            <Marker position={[lat - midLat, lon + midLon]} />
 
-                {/* bottom left */}
-                <Marker position={[lat - midLat, lon - midLon]} />
+            {/* bottom left */}
+            <Marker position={[lat - midLat, lon - midLon]} />
 
-                {waypoints.map((waypoint, index) => {
-                  return <Marker key={index} position={waypoint} />;
-                })}
+            {waypoints.map((waypoint, index) => {
+              return <Marker key={index} position={waypoint} />;
+            })}
 
-                {waypointsPaired.length &&
-                  waypointsPaired.map((waypoint) => {
-                    return (
-                      <Polyline
-                        pathOptions={{ color: "red" }}
-                        positions={waypoint}
-                      />
-                    );
-                  })}
+            {waypointsPaired.length &&
+              waypointsPaired.map((waypoint) => {
+                return (
+                  <Polyline
+                    pathOptions={{ color: "red" }}
+                    positions={waypoint}
+                  />
+                );
+              })}
 
-                {/* waypoints.length && <Routes latLngTuples={waypoints} /> */}
-              </MapContainer>
-            </ResizablePanel>
+            {/* waypoints.length && <Routes latLngTuples={waypoints} /> */}
+          </MapContainer>
 
-            <ResizableHandle />
-
-            <ResizablePanel className="flex flex-col justify-end gap-2 p-1">
-              <Excalidraw
-                excalidrawAPI={setExcalidraw}
-                theme={currentTheme === "light" ? THEME.LIGHT : THEME.DARK}
-              />
-              <button onClick={handleDraw} className="btn btn-primary btn-sm">
-                <span className={cn(loading && "loading")}></span>
-                <span>Submit</span>
-              </button>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+          <div className="absolute top-0 left-0 w-full h-full opacity-50">
+            <Excalidraw
+              excalidrawAPI={setExcalidraw}
+              theme={currentTheme === "light" ? THEME.LIGHT : THEME.DARK}
+            />
+          </div>
         </div>
+
+        <button
+          onClick={handleDraw}
+          className="btn btn-primary btn-sm btn-wide"
+        >
+          <span className={cn(loading && "loading")}></span>
+          <span>Submit</span>
+        </button>
       </div>
     </main>
   );
