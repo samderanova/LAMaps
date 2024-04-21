@@ -94,7 +94,7 @@ function App() {
     );
   }, []);
 
-  const handleDraw = useCallback(async () => {
+  const submitDrawing = useCallback(async () => {
     setLoading(true);
 
     if (excalidraw == null) return;
@@ -253,7 +253,7 @@ function App() {
                 excalidrawAPI={setExcalidraw}
                 theme={currentTheme === "light" ? THEME.LIGHT : THEME.DARK}
               />
-              <button onClick={handleDraw} className="btn btn-primary btn-sm">
+              <button onClick={submitDrawing} className="btn btn-primary btn-sm">
                 <span className={cn(loading && "loading")}></span>
                 <span>Submit</span>
               </button>
