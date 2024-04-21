@@ -65,6 +65,11 @@ def fit_to_map(pts: list[tuple[float, float]]):
     '''
     street_graph = get_map()
 
+    utm_pts_metadata = [
+        utm.from_latlon(pt[0], pt[1])[2:]
+        for pt in pts
+    ]
+
     utm_pts_np = np.array(
         [
             utm.from_latlon(pt[0], pt[1])[:2]
@@ -72,38 +77,57 @@ def fit_to_map(pts: list[tuple[float, float]]):
         ]
     )
 
-    utm_pts_metadata = [
-        utm.from_latlon(pt[0], pt[1])[2:]
-        for pt in pts
-    ]
+    num_seeds = 10
 
-    for _ in range(10):
-        # find closes graph nodes to all points
-        node_ids = ox.distance.nearest_nodes(street_graph, utm_pts_np[:, 0], utm_pts_np[:, 1])
-        err_vectors = np.array([
-            [
-                street_graph.nodes[node_id]["x"] - utm_pts_np[i, 0],
-                street_graph.nodes[node_id]["y"] - utm_pts_np[i, 1]
-            ]
-            for i, node_id in enumerate(node_ids)
+    best_pts = None
+    lowest_err = np.inf
+
+    for _seed_no in range(num_seeds):
+        # apply random translation, rotation, and scaling
+        pts_mean = np.mean(utm_pts_np, axis=0)
+        centered_points = utm_pts_np - pts_mean
+        rot_degrees = np.random.uniform(-45, 45)
+        rot_radians = np.radians(rot_degrees)
+        rot_matrix = np.array([
+            [np.cos(rot_radians), -np.sin(rot_radians)],
+            [np.sin(rot_radians), np.cos(rot_radians)]
         ])
+        shape_size = np.max(centered_points, axis=0) - np.min(centered_points, axis=0)
+        scale = np.random.uniform(0.9, 1.1, size=2)
+        translation = np.random.uniform(-1, 1, size=2) * shape_size
 
-        # print magnitude of error vectors
-        print(utm_pts_np)
+        transformed_points = centered_points * scale @ rot_matrix.T + translation + pts_mean
 
-        avg_err = np.mean(err_vectors, axis=0)
-        utm_pts_np = utm_pts_np + avg_err
+        for _ in range(10):
+            # find closes graph nodes to all points
+            node_ids = ox.distance.nearest_nodes(street_graph, transformed_points[:, 0], transformed_points[:, 1])
+            err_vectors = np.array([
+                [
+                    street_graph.nodes[node_id]["x"] - transformed_points[i, 0],
+                    street_graph.nodes[node_id]["y"] - transformed_points[i, 1]
+                ]
+                for i, node_id in enumerate(node_ids)
+            ])
+
+            avg_err = np.mean(err_vectors, axis=0)
+            
+            transformed_points = transformed_points + avg_err
+        
+        nearest_nodes = ox.distance.nearest_nodes(street_graph, transformed_points[:, 0], transformed_points[:, 1])
+        final_err = np.mean(np.linalg.norm(err_vectors, axis=1))
+        if final_err < lowest_err:
+            best_pts = nearest_nodes
+            lowest_err = final_err
 
     # snap to nearest road
-    nearest_nodes = ox.distance.nearest_nodes(street_graph, utm_pts_np[:, 0], utm_pts_np[:, 1])
-    utm_pts_np = np.array([
+    snapped_utm_points = np.array([
         [street_graph.nodes[node_id]["x"], street_graph.nodes[node_id]["y"]]
-        for node_id in nearest_nodes
+        for node_id in best_pts
     ])
 
     gps_coords = np.array([
         utm.to_latlon(pt[0], pt[1], metadata[0], metadata[1])
-        for pt, metadata in zip(utm_pts_np, utm_pts_metadata)
+        for pt, metadata in zip(snapped_utm_points, utm_pts_metadata)
     ])
 
     return gps_coords
