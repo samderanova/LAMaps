@@ -5,12 +5,13 @@ import numpy as np
 import osmnx as ox
 from pyproj import Proj
 
+import utm
+
 # Miles per 1 degree.
 
 LA_MAP_PATH = os.getenv("LA_MAP_PATH")
 if LA_MAP_PATH is None:
     raise Exception("env LA_MAP_PATH required")
-
 
 @cache
 def get_map():
@@ -58,59 +59,51 @@ def scale_and_place(
     ]
 
 
+def fit_to_map(pts: list[tuple[float, float]]):
+    '''
+    pts: list of lat, lon points 
+    '''
+    street_graph = get_map()
 
-
-def get_loss_matrix(matrix):
-    G = get_map()
-
-    lats = matrix[:, 0].tolist()
-    lons = matrix[:, 1].tolist()
-
-    node_ids = ox.distance.nearest_nodes(G, lats, lons)
-    nodes = G.nodes
-
-    loss_matrix = []
-    for i, node_id in enumerate(node_ids):
-        node = nodes[node_id]
-        lat = node["y"] - matrix[i, 0]
-        lon = node["x"] - matrix[i, 1]
-        loss_matrix.append(np.array([lat, lon]))
-
-    return np.stack(loss_matrix)
-
-
-def get_loss_vector(loss_matrix):
-    return np.sum(loss_matrix, axis=0)
-
-
-def get_total_loss(loss_matrix):
-    total_loss = 0
-    for vector in loss_matrix:
-        total_loss += np.linalg.norm(vector)
-    return total_loss
-
-
-def fit_to_map(matrix):
-    total_loss_per_iter = []
-    for _ in range(40):
-        loss_matrix = get_loss_matrix(matrix)
-        total_loss = get_total_loss(loss_matrix)
-        total_loss_per_iter.append(total_loss)
-
-        vector = get_loss_vector(loss_matrix)
-        matrix = matrix + vector * 0.1
-
-    return matrix, total_loss_per_iter
-
-
-def get_distance_miles(lat, lon):
-    G = get_map()
-    node_id = ox.distance.nearest_nodes(
-        G,
-        lat,
-        lon,
+    utm_pts_np = np.array(
+        [
+            utm.from_latlon(pt[0], pt[1])[:2]
+            for pt in pts
+        ]
     )
-    nodes = G.nodes()
-    node = nodes[node_id]
-    closest_lat, closest_lon = node["lat"], node["lon"]
-    return (lat - closest_lat) * 69, (lon - closest_lon) * 54.6
+
+    utm_pts_metadata = [
+        utm.from_latlon(pt[0], pt[1])[2:]
+        for pt in pts
+    ]
+
+    for _ in range(10):
+        # find closes graph nodes to all points
+        node_ids = ox.distance.nearest_nodes(street_graph, utm_pts_np[:, 0], utm_pts_np[:, 1])
+        err_vectors = np.array([
+            [
+                street_graph.nodes[node_id]["x"] - utm_pts_np[i, 0],
+                street_graph.nodes[node_id]["y"] - utm_pts_np[i, 1]
+            ]
+            for i, node_id in enumerate(node_ids)
+        ])
+
+        # print magnitude of error vectors
+        print(utm_pts_np)
+
+        avg_err = np.mean(err_vectors, axis=0)
+        utm_pts_np = utm_pts_np + avg_err
+
+    # snap to nearest road
+    nearest_nodes = ox.distance.nearest_nodes(street_graph, utm_pts_np[:, 0], utm_pts_np[:, 1])
+    utm_pts_np = np.array([
+        [street_graph.nodes[node_id]["x"], street_graph.nodes[node_id]["y"]]
+        for node_id in nearest_nodes
+    ])
+
+    gps_coords = np.array([
+        utm.to_latlon(pt[0], pt[1], metadata[0], metadata[1])
+        for pt, metadata in zip(utm_pts_np, utm_pts_metadata)
+    ])
+
+    return gps_coords

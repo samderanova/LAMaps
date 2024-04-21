@@ -29,7 +29,7 @@ async def img_to_points(
     gps_coords = scale_and_place(points, [north, east], [south, west], cv_img.shape[0], cv_img.shape[1])
 
     if snap == "true":
-        gps_coords_ndarray, _ = fit_to_map(gps_coords)
+        gps_coords_ndarray = fit_to_map(np.array(gps_coords))
         gps_coords = gps_coords_ndarray.tolist()
 
     gpx_file = make_gpx(gps_coords)
