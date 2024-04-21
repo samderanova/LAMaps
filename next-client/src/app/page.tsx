@@ -131,13 +131,22 @@ function App() {
       },
     });
 
-    await fetch("/maps/...", {
+		const formData = new FormData();
+		formData.set("latitude", "33.6459");
+		formData.set("longitude", "-117.842717");
+		formData.set("image", blob);
+    formData.set("max_points", '20');
+
+
+
+    const res = await fetch("/api/maps/coordinatize", {
       method: "POST",
-      body: blob,
-      headers: {
-        "Content-Type": "image/png",
-      },
+      body: formData,
     });
+
+    const content = await res.json();
+
+    const points = content.points;
 
     setWaypoints(newWaypoints);
 

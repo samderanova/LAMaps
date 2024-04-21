@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(maps.router, prefix="/maps")
+app.include_router(maps.router, prefix="/api/maps")
 
 
 def generate_points(text: str):
