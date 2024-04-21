@@ -16,7 +16,6 @@ import { useTheme } from "next-themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Polyline, Marker, TileLayer } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
-import { Routes } from "./Map";
 
 const ATTRIBUTION_MARKUP =
   '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors';
@@ -128,7 +127,7 @@ function App() {
       elements,
       files: excalidraw.getFiles(),
       getDimensions: () => {
-        return { width: 350, height: 350 };
+        return { width: 500, height: 500 };
       },
     });
 
@@ -220,10 +219,6 @@ function App() {
                 />
 
                 <Marker position={center!} />
-
-                {waypoints.map((waypoint, index) => {
-                  return <Marker key={index} position={waypoint} />;
-                })}
 
                 {waypointsPaired.length &&
                   waypointsPaired.map((waypoint) => {
